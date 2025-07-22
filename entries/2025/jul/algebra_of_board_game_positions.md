@@ -291,6 +291,104 @@ Ready?! Ready?! Now watch this!!
 Phew! Okay, let's take a break.
 
 
+## The algebra of chess moves
+
+Okay, we have an "algebra of chessboards", but at the end there, we also
+introduced a way to describe chess *moves*, for instance:
+
+    ♙ + ur♟ -> . + ur♙
+
+Now, let's say for a moment that we're not (yet) only interested in describing
+*valid* chess moves.
+We want a way to describe *any* chess move, even one where you teleport your
+king to the other side of the board, remove your opponent's queen, and add
+two knights to your side, all in one move.
+Crazy, you say?!?! Well, all I say to you is:
+
+    ♔ + uuuuuu. + uurr♛ -> . + uuuuuu♔ + uurr. + lll♘ + rrr♘
+
+It's not a *legal* move, but it's definitely a, um, move.
+And we can describe it!
+
+Now, can we describe a series of moves?
+For example, moving a king one square up, then one square right?
+
+    Moving a king one square up:
+
+    ♔ -> . + u♔
+
+    Moving a king one square right:
+
+    ♔ -> . + r♔
+
+    Moving a king one square up, then one square right (all in one move):
+
+    ♔ -> . + ur♔
+
+I would like a way of saying that one move was made, and then another move
+was made; and I would like a way of saying that such a series of moves is
+equivalent to a single (possibly illegal!) move.
+
+    (♔ -> . + u♔)(♔ -> . + r♔) = (♔ -> . + ur♔)
+
+Make sense? So, when we write two moves next to each other, that represents
+the move where we do those moves, one after another.
+But... does that always make sense?.. what does the following sequence of
+moves result in?
+
+    (♔ -> . + u♔)(♖ -> . + u♖) = ???
+
+We moved a king upwards, and then we moved a rook upwards.
+So uhhh... I guess that one doesn't "simplify" into a single move?
+Or at least, not a move we can write with a single `->`?
+
+For that matter, let's go back to our example of moving the king up and
+then to the right.
+We wrote it as an equation, as if moving your king up, and then moving your
+king right, was always the same as moving your king up-and-right.
+But... that's only the case if you only have one king.
+Which, in standard chess, you do.
+But what about moving a pawn up, and then moving a pawn up? Does it have
+to be the same pawn each time?
+
+    (♙ -> . + u♙)(♙ -> . + u♙) = (♙ -> . + u. + uu♙)  ...???
+
+If you are lost, that's probably because **this is not a good syntax for
+visualizing the board.**
+So don't feel lost, don't run away from me please, stay, yes stay with me,
+here I'll give you a nice picture of a chessboard:
+
+    .......
+    ..♙.♙..
+
+    Applying the move (♙ -> . + u♙) could give us *either* of:
+
+    ..♙....        ....♙..
+    ....♙..   or   ..♙....
+
+Now, I've been jumping ahead like crazy here with this syntax and these
+rules, so in case you're wondering -- I'm not *proving* anything here about
+this syntax.
+I'm actually coming up with the rules for it as I go along.
+I have decided, just now, that I would like for the meaning of a move like
+`♙ -> . + u♙` to be "find any one piece ♙, and replace it with `. + u♙`".
+
+In other words, our "moves" which we're describing with `->` are pattern
+matching rules.
+Let's call the thing on the left of `->` a "pattern", and the thing on the
+right a "replacement".
+
+If you are a programmer, this may seem familiar; consider something like
+`board_fragment.replace("♙.", ".♙")`, or `sed 's/♙./.♙/' < board_fragment`.
+And right away, if you're a programmer, I really hope you asked yourself
+"but what about when the pattern is a regular expression?" because that is
+*absolutely* where we are going with this.
+
+
+
+
+
+
 ====================================================================
 
     ♜♞♝♚♛♝♞♜
