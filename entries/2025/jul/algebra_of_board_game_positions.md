@@ -7,8 +7,8 @@ I like playing them too, for fun, and for purposes of experimentation.
 
 ## What is algebra?
 
-I think an "algebra" can be thought of as rules for replacing parts of something
-you've written down.
+I think a halfway decent description of "an algebra" is: a set of rules for
+replacing parts of something you've written down.
 
 So for instance, let's say you've written this down on a piece of paper:
 
@@ -23,27 +23,30 @@ And then another rule says, you can replace `x + 0` with `x`:
 
     x
 
-And then another rule says, you can replace `x` with `x * 1`:
+But then *another* rule says, you can replace `x` with `x * 1`:
 
     x * 1
 
-And then another rule says, you can replace `1` with `20 / 20`:
+And another rule says, you can replace `1` with `20 / 20`:
 
     x * 20 / 20
 
 Right? Notice how at one point, we had x all by itself.
 And sometimes, we're playing a game with algebra where we want to do that,
-like when we're trying to "solve for x":
+like when we have an equation, and we're trying to "solve for x":
 
     3x + 4 = 5
 
-But the rules don't tell us that we *have* to solve for x.
-In fact, the rules tell us we're totally fine to do this:
+But our goal of solving for x isn't one of the rules of algebra; it's just
+something we layer on top.
+Algebra doesn't tell us that we *have* to solve for x; in fact, it says it's
+totally fine if we do this:
 
     3x + 4 - 7y = 5 - 7y
 
-We could turn this into a sort of game, where there's an equation written
-down, and players take turns "doing stuff to it".
+We could turn this into a sort of multiplayer game, where there's an equation
+written down, and players take turns applying rules of algebra to it, one at
+a time.
 Maybe the players are trying to work together to solve for a variable?..
 Maybe there are 3 players, each trying to solve for a different variable?..
 Maybe there are a whole bunch of players, and they're allowed to form alliances,
@@ -58,124 +61,244 @@ paper, and how people are allowed to make changes to it.
 
 And I think, when you open your mind to that fact, you can start to see
 a connection between algebra and board games.
-
 In algebra, when we write something down on a piece of paper, that piece
 of paper is like the board in chess.
 Let's say that algebra and chess are both games, and the paper and board
 are called the game's "state".
 Some of the game rules are an algebra describing how the state is allowed
 to change.
-Other game rules describe the players, their goals, the order in which
-they take turns, etc. Let's forget about those rules for now.
 When a player takes their turn, they do so by changing the game's state
 according to the rules of the game's algebra.
+Other game rules describe the players, their goals, the order in which
+they take turns, etc; but let's forget about those rules for now, and
+focus on the algebra.
 
-==============================================================
 
-Now let's talk about "abstract algebra", which is the study of "algebras"
-in general, not necessarily the "regular" one based on numbers.
-In an algebra, there are rules which tell you what kinds of thing are
-allowed to be written on the piece of paper.
-For instance, in the "regular algebra" of numbers, you can write this:
+## The algebra of chessboard fragments
 
-    (x + 1)
+Here is a chess board:
 
-...but never this:
+    ♜♞♝♚♛♝♞♜
+    ♟♟♟♟♟♟♟♟
+    ........
+    ........
+    ........
+    ........
+    ♙♙♙♙♙♙♙♙
+    ♖♘♗♔♕♗♘♖
 
-    (x + 1
+And here is a valid move:
 
-...nor this:
+    ♜♞♝♚♛♝♞♜
+    ♟♟♟♟♟♟♟♟
+    ........
+    ........
+    ........
+    .....♙..
+    ♙♙♙♙♙.♙♙
+    ♖♘♗♔♕♗♘♖
 
-    )x + 1(
+And here is the rule of chess algebra which says it was valid:
 
-...and this rule, that parentheses must come in matching open/close pairs,
-is one which is shared by all algebras.
-Other rules are also always shared, having to do with variables, equality,
-and replacement.
-That is, if `x = something`, then you can always replace `x` with `something`.
-But the details of values like `0` or `34`, and operators like `+` and `-`,
-can be very different in different algebras.
+    .
+    ♙
 
-The rules for what can be written down in an algebra are usually given by
-naming different kinds of thing, and then saying how to build 
-For instance, we could make a small algebra based on numbers, where:
+    ...can be replaced with:
 
-    A digit is one of: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
-    A number is: 0, or a series of digits not starting with 0
-    A variable is: a lowercase letter between a and z
-    An expression is: a number, a variable, or (E1 + E2)
-        ...where E1 and E2 are expressions
+    ♙
+    .
 
-    You are allowed to write an expression on the paper.
+Make sense? Now here is another rule of chess algebra, saying that a pawn
+may take an enemy pawn diagonally:
 
-With these rules, we could write (for example) any of the following things on
-our piece of paper:
+     ♟
+    ♙
 
-    23
+    ...can be replaced with:
 
-    q
+     ♙
+    .
 
-    (1 + 2)
+These rules can be applied anywhere on the board, similar to how the rule
+that `x + 0` can be replaced with `x` can be applied anywhere within an
+expression or equation.
 
-    ((x + 1) + 42)
+Now, here is another rule:
 
-    (a + (b + c))
+    .
+    .
+    .
+    ♖
 
-However, with these rules, we couldn't write any of the following things on
-our piece of paper:
+    ...can be replaced with any of:
 
-    (100 - 50)
+    .   .   ♖
+    .   ♖   .
+    ♖   .   .
+    .   .   .
 
-    (1 + 2) = 3
+An interesting question here is, "how can we express this rule more simply"?
+And I think it's clear that we could express it in terms of this rule:
 
-    1 + 2
+    .
+    ♖
 
-    (x + y + z)
+    ...can be replaced with:
 
-...because our rules don't mention `-` or `=`, and they only say we can use `+` when
-it has exactly 2 expressions on either side and parentheses around the whole
-thing.
-The rules of "regular algebra" of course let you write down many more things,
-not to mention allow you to change them in various ways, for instance turning
-`(x + y) + z` into `x + (y + z)`!
-In abstract algebra, we can't take such things for granted.
+    ♖
+    .
 
-Now, let's talk about algebraic geometry.
-If "regular algebra" can be used to talk about numbers, algebraic geometry can be
-used to talk about geometry: things like points, lines, circles, etc.
-If you've ever learned about vector algebra, then you may already know that you
-can use algebra to talk about points and lines.
-For instance, the vector `<1, 2>` can represent a point, or an "arrow" pointing in
-a certain direction.
+Now, let's gear up like proper mathematicians and start coming up with some
+syntax here.
+We're going to come up with a way to describe fragments of chess boards as
+algebraic expressions.
+In fact, we're going to come up with an "algebra of chessboard fragments".
+Let's say that all board fragments have a center.
+The "empty board fragment" is indicated by 0, and consists of no squares or
+pieces.
+The symbol `.` is the board fragment consisting of an empty square, and the
+center of this board fragment is the square's bottom-left corner.
+The symbols `♟`, `♙`, `♚`, `♔`, etc are the board fragments consisting of
+squares with the indicated piece on them, and the centers of these board
+fragments are their squares' bottom-left corners.
 
-Here is a diagram showing three points, A, B, and C.
+There are also "movements".
+The basic movements are `u`, `d`, `l`, and `r`, meaning movements of 1 square
+up, down, left, and right.
+There is also the "identity movement", `1`, which means not moving at all.
+Given a board fragment f and movement m, we can apply m to f, resulting in
+another board fragment.
+For instance, `u.` is the board fragment consisting of an empty square, but
+where the fragment's center is one square's width down from the square's
+bottom-left corner.
+Movements can be combined with each other; for instance, `ur` means a movement
+of one square to the right, followed by a movement of one square up.
+That's a diagonal movement!.. and note that `ur` = `ru`, that is, it doesn't
+matter whether we move up or right "first": a movement is only defined by
+where it ends up.
 
-    2|  C
-    1|
-    0|A   B
-     +-----
-      0 1 2
+Here's an illustration of some board fragments, with "@" showing the center:
 
-These points could also be written as vectors:
+    The empty board fragment, "0":
 
-    A = <0, 0>
-    B = <2, 0>
-    C = <1, 2>
+    @
 
-And we can also use vectors as "arrows", or *movements* if you like, which
-move points around.
-Here are some steps in vector algebra showing how to "move" C by `<3, -2>`,
-resulting in a new point called "D":
+    The board fragment ".":
 
-    D = C + <3, -2>
+    +-+
+    | |
+    @-+
 
-    D = <1, 2> + <3, -2>
+    The board fragment "r.":
 
-    D = <4, 0>
+      +-+
+      | |
+    @ +-+
 
-    2|  C
-    1|
-    0|A   B   D
-     +---------
-      0 1 2 3 4
+    The board fragment "ru.":
+
+      +-+
+      | |
+      +-+
+
+    @
+
+    The board fragment "l.":
+
+    +-+
+    | |
+    +-@
+
+    The board fragment "♟":
+
+    +-+
+    |♟|
+    @-+
+
+    The board fragment "r♟":
+
+      +-+
+      |♟|
+    @ +-+
+
+Making sense so far?..
+
+There is also an operator, `+`, which takes two board fragments and glues
+them together, keeping their centers lined up.
+But you're never allowed to glue squares or pieces on top of each other!..
+Here are some illustrations:
+
+    The board fragment ". + r.":
+
+    +-+-+
+    | | |
+    @-+-+
+
+    The board fragment "♟ + r♜":
+
+    +-+-+
+    |♟|♜|
+    @-+-+
+
+I hope it's clear that we could build up a picture of a chessboard this way;
+that is, we can express any chess position using this algebra.
+Next, we'll see how to express valid chess moves.
+
+By the way, for any movement m, it's the case that 1m = m = m1, and m0 = 0.
+It's also the case that every movement has an inverse movement n, such that
+mn = 1.
+You can write "m⁻¹" for "the inverse of m".
+Also, for any board fragment f, it's the case that f + 0 = f.
+Also, for any movement m, and board fragments f and g, it's the case that
+m(f + g) = mf + mg!..
+In abstract algebra, we would say that the movements form a "group", and so
+do the board fragments, and together, the movements and board fragments form
+a "ring". Just like addition and multiplication of numbers! Ooooh fancy.
+Also, I'll tell you a secret: we are doing algebraic geometry here, where
+"board fragments" are sets, "squares" are points (as in, the kinds of points
+which can form a line or a shape), 0 is the empty set, and `+` is set union.
+
+Okay! Earlier, we said that this was a valid chess move:
+
+    .
+    ♙
+
+    ...can be replaced with:
+
+    ♙
+    .
+
+Now let's express that move with our chess algebra:
+
+    ♙ + u. -> . + u♙
+
+Right?! Right?! Awww man, look at it, that's so cool!..
+
+And now, let's do this one, where a pawn takes an enemy pawn diagonally:
+
+     ♟
+    ♙ 
+
+    ...can be replaced with:
+
+     ♙
+    . 
+
+Ready?! Ready?! Now watch this!!
+
+    ♙ + ur♟ -> . + ur♙
+
+Phew! Okay, let's take a break.
+
+
+====================================================================
+
+    ♜♞♝♚♛♝♞♜
+    ♟♟♟♟♟♟♟♟
+    ........
+    ........
+    ........
+    ........
+    ♙♙♙♙♙♙♙♙
+    ♖♘♗♔♕♗♘♖
 
