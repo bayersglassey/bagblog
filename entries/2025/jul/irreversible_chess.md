@@ -221,7 +221,8 @@ is busy elsewhere on the board):
     ........
     ....♕...
 
-This situation is even worse: the queen cannot take even a single pawn safely.
+The following situation is even worse: the queen is one rank closer, and now
+she cannot take even a single pawn safely.
 Remember, she can't move horizontally!.. in order to attack the sidemost pawns,
 she will need to make a diagonal movement, but the pawns have covered every
 square to which she can move:
