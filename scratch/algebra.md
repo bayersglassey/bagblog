@@ -110,3 +110,16 @@ resulting in a new point called "D":
      +---------
       0 1 2 3 4
 
+=====================================================
+
+In other words, our "moves" which we're describing with `->` are pattern
+matching rules.
+Let's call the thing on the left of `->` a "pattern", and the thing on the
+right a "replacement".
+
+If you are a programmer, this may seem familiar; consider something like
+`board_fragment.replace("♙.", ".♙")`, or `sed 's/♙./.♙/' < board_fragment`.
+And right away, if you're a programmer, I really hope you asked yourself
+"but what about when the pattern is a regular expression?" because that is
+*absolutely* where we are going with this.
+

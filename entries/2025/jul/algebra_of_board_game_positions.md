@@ -257,6 +257,8 @@ a "ring". Just like addition and multiplication of numbers! Ooooh fancy.
 Also, I'll tell you a secret: we are doing algebraic geometry here, where
 "board fragments" are sets, "squares" are points (as in, the kinds of points
 which can form a line or a shape), 0 is the empty set, and `+` is set union.
+**If none of that terminology sounds familiar, don't worry about it. Let's
+get back to chess.**
 
 Okay! Earlier, we said that this was a valid chess move:
 
@@ -373,20 +375,67 @@ I'm actually coming up with the rules for it as I go along.
 I have decided, just now, that I would like for the meaning of a move like
 `♙ -> . + u♙` to be "find any one piece ♙, and replace it with `. + u♙`".
 
-In other words, our "moves" which we're describing with `->` are pattern
-matching rules.
-Let's call the thing on the left of `->` a "pattern", and the thing on the
-right a "replacement".
+But a corollary of my decision is that this equation which I gave earlier
+is *not* true, according to our algebra of moves:
 
-If you are a programmer, this may seem familiar; consider something like
-`board_fragment.replace("♙.", ".♙")`, or `sed 's/♙./.♙/' < board_fragment`.
-And right away, if you're a programmer, I really hope you asked yourself
-"but what about when the pattern is a regular expression?" because that is
-*absolutely* where we are going with this.
+    (♙ -> . + u♙)(♙ -> . + u♙) = (♙ -> . + u. + uu♙)
 
+...that is, to tell someone "move some pawn up, and then move some pawn up",
+is not the same as to tell someone "move some pawn up twice".
 
+Let's ponder that for a moment... just savour the idea for a second...
+Okay, now I'm going to jump around again.
 
+Let's go back to this rule, which I mentioned wayyy earlier:
 
+    .
+    .
+    .
+    ♖
+
+    ...can be replaced with any of:
+
+    .   .   ♖
+    .   ♖   .
+    ♖   .   .
+    .   .   .
+
+...and I said we should be able to express it in terms of this rule:
+
+    .
+    ♖
+
+    ...can be replaced with:
+
+    ♖
+    .
+
+Well, here's how we write that last rule, as a "move":
+
+    ♖ + u. -> . + u♖
+
+And now the question is, how do we use that rule to express (and I'm going
+to add some new syntax here, watch me now) this rule:
+
+    ♖ + u. + uu. + uuu. -> (. + u♖ + uu. + uuu.) | (. + u. + uu♖ + uuu.) | (. + u. + uu. + uuu♖)
+
+See what I did there? I added `|` to mean "any of".
+So like, `x -> y | z` means "the move where board fragment x becomes either
+board fragment y, or board fragment z".
+
+And I would *like* to express the rook's movement as something like:
+
+    (♖ + u. -> . + u♖)(♖ + u. -> . + u♖)(♖ + u. -> . + u♖)
+
+...or better yet, forget about limiting the rook to moving forward by
+only 3 squares, what we really want is something more like:
+
+    (♖ + u. -> . + u♖)+
+
+...where the `+` at the end means "do this movement 1 or more times".
+Programmers, wake up. Did your ears twitch just now? Did your nostrils
+widen, and did you think to yourself "smells like regular expressions"?
+Yessss. Yesssss, that is exactly where we're going with this.
 
 
 ====================================================================
