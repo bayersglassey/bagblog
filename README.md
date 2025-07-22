@@ -10,4 +10,4 @@ Blog entries can be found, organized by year and month, in the [entries/](entrie
 
 Greatest hits (chosen arbitrarily by myself):
 * [Irreversible Chess](entries/2025/jul/irreversible_chess.md)
-* [An Algebra of Chess](entries/2025/jul/algebra_of_board_game_positions.md)
+* [An Algebra of Chess](entries/2025/jul/algebra_of_chess.md)

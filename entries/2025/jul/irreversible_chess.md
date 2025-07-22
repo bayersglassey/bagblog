@@ -42,13 +42,23 @@ standard chess terminology; and per standard chess notation, we may refer
 to squares of the board by a combination of letter and number, e.g. the
 unfilled and filled kings begin the game on squares d1 and d8, respectively.
 
+We may sometimes describe moves according to standard chess notation, e.g.
+"♙d4 ♞d5" means a turn where unfilled player moves a pawn to d4, and filled
+player moves their knight to d5.
+An "x" means "takes", for instance "♞xc3" means "knight takes on c3".
+
+
 ## The basic variant
 
 For our irreversible chess variant, we will begin with all the standard
 rules of chess, but impose restrictions on the movements of the pieces,
 blocking any which might be reversible.
+We require that our variant be a strict subset of regular chess: that is,
+every valid move in our variant must be a valid move in regular chess, but
+not vice versa.
+
 Let's begin by requiring that when any piece moves, it must end up further
-"forward" than it was before -- that is, further towards the other player's
+"forward" than it was before - that is, further towards the other player's
 side of the board.
 
 Pawns are unaffected by this rule; the other pieces now move and take as
@@ -209,7 +219,7 @@ Let's consider the pawns.
 The movement of pawns in our variant is unchanged; however, I believe we may
 say that they have become more powerful, because it is very difficult to
 attack a diagonal chain of pawns head-on.
-So for instance, the queen here cannot take all the pawns by herself -- at
+So for instance, the queen here cannot take all the pawns by herself - at
 most, she can take one safely, or she can take 3 if she is willing to put
 herself in danger (and the pawns refuse to defend themselves, or their player
 is busy elsewhere on the board):
@@ -279,7 +289,7 @@ enemy piece behind the king which the queen can take or block, for example:
     ...♖..
 
 So this is very interesting: we might say that a piece's value drops once
-it has reached the same rank as the enemy king -- or rather, once there is
+it has reached the same rank as the enemy king - or rather, once there is
 no longer any overlap in the squares reachable by a given piece and the
 enemy king.
 For instance, for the king and queen, the reachable squares form "cones"
@@ -320,8 +330,8 @@ control of the *sides* of the board, potentially allowing the enemy king
 to sneak there.
 
 Well, let's stop there for now. We have come up with, I would argue, an
-interesting chess variant -- perhaps even one worth playing!
-Let's now look at removing some of the restrictions of our variant -- always
+interesting chess variant - perhaps even one worth playing!
+Let's now look at removing some of the restrictions of our variant - always
 making sure we can guarantee that the game remains irreversible!
 
 
@@ -502,12 +512,12 @@ move horizontally, but only *towards each other*.
 Each such movement decreases the distance between the rooks, and is
 therefore irreversible.
 Once the rooks are doubled, they can no longer move horizontally,
-except of course to take an enemy piece -- at which point they may
+except of course to take an enemy piece - at which point they may
 again move towards each other.
 
 Can we come up with a similar rule, allowing the queen to move
 horizontally in certain situations?.. for instance, what if the queen
-is always allowed to move towards the king's current file -- either
+is always allowed to move towards the king's current file - either
 horizontally, or diagonally backwards?..
 But no, this would allow the queen to move back and forth between the
 following two squares (A and B):
@@ -519,3 +529,218 @@ following two squares (A and B):
 In any case, allowing all pieces to *take* without the need of moving
 forwards, and allowing each player's rooks to move horizontally towards
 each other, may bring back some of the "fighting spirit" of regular chess.
+
+
+## More analysis of strategy and theory in the basic variant
+
+Let's return to the basic variant, that is, chess but where pieces must
+always move forwards, even when taking.
+
+### Mating
+
+Under what circumstances is it possible to mate?
+
+The fact that the king cannot move horizontally means that bishops have
+an easier time of blocking his escape.
+For instance, in the following example, the king can only move directly
+forwards:
+
+    ...♝...
+    ..X.X..
+    .X.♔.X.
+
+This tells us that the filled queen may give checkmate in this position,
+unless another unfilled piece can take her or interpose between her and
+the king:
+
+    ...♛...
+    ..XXX..
+    .X.♔.X.
+
+So, perhaps when moving one's king forwards, it's a good idea to keep bishops
+and/or the queen "pointed diagonally" at the squares just ahead of the king?..
+Or more generally, to use one's far-ranging pieces to draw a corridor of safety
+for one's king?.. something like this:
+
+    .....|//
+    .....//|
+    ....//.|
+    ...//|♔|
+    ../♗.|.|
+    .♗...♕.♖
+
+Well, anyway - let's think about which other pieces can give checkmate...
+Basically, we just need to cover the 3 squares in front of the king, plus
+the king himself:
+
+    XXX
+    .♔.
+
+Let's say we have the king trapped against the left or right side of the
+board, or against one of the rooks at the side of the board:
+
+    ♜..
+    X..
+    X..
+    X♔.
+
+I suppose we now just need one piece to hit the king on the diagonal, and
+another to cover his escape forwards, which can be done e.g. by the bishops:
+
+    ♜..♝♝
+    |.//.
+    |//..
+    |♔...
+
+...or a bishop and a knight:
+
+    ♜.♞.♝
+    |../.
+    |X/..
+    |♔...
+
+...but notice that the knight can only achieve this from that particular
+square; if it tries to cover the king's escape from the square in the
+following diagram, it blocks the bishop from giving check:
+
+    ♜...♝
+    |..♞.
+    |X...
+    |♔...
+
+It seems to me that it's likely much easier to give checkmate using pawns...
+But I suppose it's difficult to do so when one's pawns are opposed by the
+enemy pawns?..
+
+What happens in the following position?.. can either player force a draw?..
+
+    6..♚..
+    5.♟♟♟.
+    4.....
+    3.....
+    2.♙♙♙.
+    1..♔..
+     abcde
+
+Let's say one player attempts to defend, and the other to attack.
+Unfilled player goes first, and is defending:
+
+    ♙c3 ♟d4
+
+    6..♚..
+    5.♟♟..
+    4...♟.
+    3..♙..
+    2.♙.♙.
+    1..♔..
+     abcde
+
+If ♙xd4, ♟xd4 (that is, the players trade pawns on d4), then we easily arrive
+at a drawn position:
+
+    ♙xd4 ♟xd4
+    ♙d3 ♟b4
+    ♙b3
+
+    6..♚..
+    5.....
+    4.♟.♟.
+    3.♙.♙.
+    2.....
+    1..♔..
+     abcde
+
+
+### Moving bastions
+
+In regular chess, one may move one's king to the left or right side of
+the board, and then crowd various other pieces around him.
+In our variant, it's relatively difficult to crowd pieces directly around
+the king, since it's necessary to move pieces forward in order to get
+them to a file closer to the king.
+But perhaps we can create "moving bastions", where the king moves forward
+along with a group of protectors?..
+
+Who can we send with the king?
+Let's say we have not castled (either because we are playing the basic
+variant where castling is disallowed, or because we are playing with
+castling allowed but have simply not done so yet).
+We can use a chain of pawns to provide our king with a sort of corridor
+within which to travel:
+
+    ........
+    ......♙.
+    .....♙/♙
+    ....♙/..
+    ♙♙♙♙/...
+    ♖♘♗♔♕♗♘♖
+
+...however, this will require having the king sneak along just inside the
+wall of pawns, where he will be vulnerable to attack from queens, bishops,
+and knights outside the wall.
+
+Perhaps it's better to attempt a slightly wider corridor, allowing the king
+to travel fully protected by the pawn wall (aside from knights), and the
+king-side bishop to protect the diagonal just inside the wall?..
+
+    ........
+    .....♙♙.
+    ....♙//♙
+    ...♙//..
+    ♙♙♙//...
+    ♖♘♗♔♕♗♘♖
+
+If this is a desirable formation, then perhaps "control of the center" is
+indeed a useful concept in our variant, just as in regular chess.
+That is, if either player can form a pawn chain which allows the king to
+make a semi-protected run for the other side of the board...
+
+Well, let's play a brief game against ourselves, where both sides attempt
+to control the center in the usual way.
+
+    ♙d4 ♟d5
+    ♘f3 ♞f6
+    ♗g5
+
+    8♜♞♝♚♛♝.♜
+    7♟♟♟.♟♟♟♟
+    6.....♞..
+    5...♟..♗.
+    4...♙....
+    3.....♘..
+    2♙♙♙.♙♙♙♙
+    1♖♘.♔♕♗.♖
+     abcdefgh
+
+The unfilled bishop threatens the knight; unlike in regular chess, neither
+of them can retreat to safety.
+Perhaps it's best for filled knight to move forwards, under protection of
+the pawn on d5?..
+
+    ... ♞e4
+
+    8♜♞♝♚♛♝.♜
+    7♟♟♟.♟♟♟♟
+    6........
+    5...♟..♗.
+    4...♙♞...
+    3.....♘..
+    2♙♙♙.♙♙♙♙
+    1♖♘.♔♕♗.♖
+     abcdefgh
+
+Interesting - the filled knight is now threatening f2, forking the king
+and rook. In regular chess, it might be possible to shuffle the king and/or
+rook horizontally to escape the threat, but here that is impossible.
+The rook could move forwards to escape the threat; is that useful?.. in
+regular chess, moving one's rooks or queen early is generally a bad idea,
+because it slows development, and allows the opponent to potentially chase
+them around the middle of the board.
+However, chasing around the middle of the board is less possible here, since
+once an attacker has "missed" their target, they have also passed it by, and
+cannot "turn back" to chase it again.
+So, perhaps it makes sense to begin pushing one's rook-pawn forward, with
+the rook following behind as needed to avoid attack from bishops and queens?..
+
+I'll stop there. It's not my goal to give a rigorous analysis of this chess
+variant, only to sketch some of its interesting properties...
