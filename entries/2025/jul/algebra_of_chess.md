@@ -5,6 +5,12 @@ I've been a fan of abstract algebra, and algebraic geometry, since University.
 I also enjoy reading and thinking about chess and other board games.
 I like playing them too, for fun, and for purposes of experimentation.
 
+Hey look, it's an algebraic expression showing a pawn taking another pawn:
+
+    ♙ + ur♟ -> . + ur♙
+
+If that piques your interest, read on.
+
 
 ## What is an algebra?
 
@@ -43,13 +49,13 @@ something we layer on top.
 Algebra doesn't tell us that we *have* to solve for x; in fact, it says it's
 totally fine if we introduce a new variable, e.g. like this:
 
-    3x + 4 - 7y = 5 - 7y
+    3x + 4 = 5 + 7y - 7y
 
 We could turn this into a sort of multiplayer game, where there's an equation
 written down, and players take turns applying rules of algebra to it, one at
 a time.
 Maybe the players are trying to work together to solve for a variable?..
-Maybe there are 3 players, each trying to solve for a different variable?..
+Maybe each player is trying to solve for a different variable?..
 Maybe there are a whole bunch of players, and they're allowed to form alliances,
 and each player has a secret goal which they keep secret from the other players?..
 But in any case, the rules of algebra tell us that every time a player makes
@@ -121,7 +127,7 @@ may take an enemy pawn diagonally:
     .
 
 These rules can be applied anywhere on the board, similar to how the rule
-that `x + 0` can be replaced with `x` can be applied anywhere within an
+"`x + 0` can be replaced with `x`" can be applied anywhere within an
 expression or equation.
 
 Now, here is another rule:
@@ -139,8 +145,8 @@ Now, here is another rule:
     .   .   .
 
 An interesting question here is, "how can we express this rule more simply"?
-And I think it's clear that we could express it in terms of this rule, if we
-had a way to apply it repeatedly:
+And I think it's clear that we could express it in terms of the following rule,
+if we had a way to apply it repeatedly:
 
     .
     ♖
@@ -162,27 +168,79 @@ algebraic expressions.
 In fact, we're going to come up with an "algebra of chessboard fragments".
 Here we go!..
 
-Let's say that all board fragments have a center.
-The "empty board fragment" is indicated by 0, and consists of no squares or
-pieces.
-The symbol `.` is the board fragment consisting of an empty square, and the
-center of this board fragment is the square's bottom-left corner.
-The symbols `♟`, `♙`, `♚`, `♔`, etc are the board fragments consisting of
-squares with the indicated piece on them, and the centers of these board
-fragments are their squares' bottom-left corners.
+Here is a "board fragment":
 
-There are also "movements".
-The basic movements are `u`, `d`, `l`, and `r`, meaning movements of 1 square
-up, down, left, and right.
-There is also the "identity movement", `1`, which means not moving at all.
+    .♛.
+    ....
+     .♔♙
+
+...it has some empty squares, and some squares with pieces on them.
+It has no edge: it's like a small cut-out from a full chessboard.
+The full chessboard is also a board fragment, though; and so is the "empty
+board fragment", which consists of... nothing. No squares, no pieces.
+
+Let's also say that all board fragments have a center.
+So, the following diagram could be for many different board fragments,
+depending on where we say its "center" is:
+
+     .
+    .♖.
+     .
+
+The center is always at the *corners* of the board's grid of squares.
+So for instance, here are two different board fragments, drawn with the
+grid visible, and the center indicated with "@":
+
+      +-+
+      | |
+    +-+-+-+
+    | |♖| |
+    +-+-+-+
+      | |
+      @-+
+
+    ...is different from:
+
+      +-+
+      | |
+    +-+-@-+
+    | |♖| |
+    +-+-+-+
+      | |
+      +-+
+
+Now let's come up with an easier way to describe board fragments without
+having to draw them out.
+
+The symbol `0` will mean the empty board fragment.
+
+The symbol `.` will mean the board fragment consisting of an empty square,
+with this board fragment's center at the square's bottom-left corner.
+The symbols `♟`, `♙`, `♚`, `♔`, etc are like `.`, but with the indicated
+piece sitting on the square.
+
+There are also "movements". These are ways of moving a board fragment around
+relative to its center.
+Imagine putting your finger on a chessboard (or a little cut-out fragment of
+a chessboard) and sliding it around: you could slide it to the left, to the
+right...
+
+The basic movements are `u`, `d`, `l`, and `r`, meaning movements of the board
+fragment 1 square up, down, left, and right relative to its center.
+You could also think of these movements as moving the center relative to the
+rest of the board fragment, but trust me for now that it's more useful to
+think of sliding the board relative to the center.
+
+There is also the "identity movement", `1`, which means no movement at all.
+
 Given a board fragment f and movement m, we can apply m to f, resulting in
 another board fragment.
-For instance, `u.` is the board fragment consisting of an empty square, but
-where the fragment's center is one square's width down from the square's
-bottom-left corner.
+For instance, `u.` is the board fragment consisting of `.` slid upwards by
+one square's width relative to the center.
+
 Movements can be combined with each other; for instance, `ur` means a movement
 of one square to the right, followed by a movement of one square up.
-That's a diagonal movement!.. and note that `ur` = `ru`, that is, it doesn't
+That's a diagonal movement!.. and note that `ur = ru`, that is, it doesn't
 matter whether we move up or right "first": a movement is only defined by
 where it ends up.
 
@@ -198,13 +256,13 @@ Here's an illustration of some board fragments, with "@" showing the center:
     | |
     @-+
 
-    The board fragment "r.":
+    The board fragment "r." (i.e. "." moved to the right):
 
       +-+
       | |
     @ +-+
 
-    The board fragment "ru.":
+    The board fragment "ru." (i.e. "." moved up and to the right):
 
       +-+
       | |
@@ -212,7 +270,7 @@ Here's an illustration of some board fragments, with "@" showing the center:
 
     @
 
-    The board fragment "l.":
+    The board fragment "l." (i.e. "." moved to the left):
 
     +-+
     | |
@@ -224,7 +282,7 @@ Here's an illustration of some board fragments, with "@" showing the center:
     |♟|
     @-+
 
-    The board fragment "r♟":
+    The board fragment "r♟" (i.e. "♟" moved to the right):
 
       +-+
       |♟|
@@ -251,23 +309,62 @@ Here are some illustrations:
 
 I hope it's clear that we could build up a picture of a chessboard this way;
 that is, we can express any chess position using this algebra.
+In fact, I'll prove it to you:
+
+    This board fragment (with the center at the bottom-left corner)...
+
+    ♜♞♝♚♛♝♞♜
+    ♟♟♟♟♟♟♟♟
+    ........
+    ........
+    ........
+    ........
+    ♙♙♙♙♙♙♙♙
+    ♖♘♗♔♕♗♘♖
+
+    ...can be written as:
+
+    uuuuuuu(♜ + r(♞ + r(♝ + r(♚ + r(♛ + r(♝ + r(♞ + r(♜)))))) +
+     uuuuuu(♟ + r(♟ + r(♟ + r(♟ + r(♟ + r(♟ + r(♟ + r♟))))))) +
+      uuuuu(. + r(. + r(. + r(. + r(. + r(. + r(. + r.))))))) +
+       uuuu(. + r(. + r(. + r(. + r(. + r(. + r(. + r.))))))) +
+        uuu(. + r(. + r(. + r(. + r(. + r(. + r(. + r.))))))) +
+         uu(. + r(. + r(. + r(. + r(. + r(. + r(. + r.))))))) +
+          u(♙ + r(♙ + r(♙ + r(♙ + r(♙ + r(♙ + r(♙ + r♙))))))) +
+           (♖ + r(♘ + r(♗ + r(♔ + r(♕ + r(♗ + r(♘ + r♖)))))))
+
+Right?.. Do you see?.. Do you see???
+
 Next, we'll see how to express valid chess moves.
 
-By the way, for any movement m, it's the case that 1m = m = m1, and m0 = 0.
+
+## A note on abstract algebra
+
+By the way, for any movement m, it's the case that `1m = m = m1`, and `m0 = 0`.
 It's also the case that every movement has an inverse movement n, such that
-mn = 1.
-You can write "m⁻¹" for "the inverse of m".
-Also, for any board fragment f, it's the case that f + 0 = f.
+`mn = 1`.
+You can write `m⁻¹` for "the inverse of m".
+Also, for any board fragment f, it's the case that `f + 0 = f`.
 Also, for any movement m, and board fragments f and g, it's the case that
-m(f + g) = mf + mg!..
+`m(f + g) = mf + mg`!..
 In abstract algebra, we would say that the movements form a "group", and so
 do the board fragments, and together, the movements and board fragments form
 a "ring". Just like addition and multiplication of numbers! Ooooh fancy.
 Also, I'll tell you a secret: we are doing algebraic geometry here, where
 "board fragments" are sets, "squares" are points (as in, the kinds of points
-which can form a line or a shape), 0 is the empty set, and `+` is set union.
-**If none of that terminology sounds familiar, don't worry about it. Let's
-get back to chess.**
+which can form a line or a shape), `0` is the empty set, and `+` is set union.
+
+**If none of this terminology sounds familiar or makes sense, don't worry about
+it. Let's get back to chess.**
+
+But you may or may not be interested in the following:
+* https://en.wikipedia.org/wiki/Abstract_algebra
+* https://en.wikipedia.org/wiki/Group_theory
+* https://en.wikipedia.org/wiki/Ring_theory
+* https://en.wikipedia.org/wiki/Algebraic_geometry
+
+
+## The algebra of chess moves
 
 Okay! Earlier, we said that this was a valid chess move:
 
@@ -279,11 +376,10 @@ Okay! Earlier, we said that this was a valid chess move:
     ♙
     .
 
-Now let's express that move with our chess algebra:
+Now let's express that move with our chess algebra, using a new operator,
+`->`, which says that one board fragment can be changed into another:
 
     ♙ + u. -> . + u♙
-
-Right?! Right?! Awww man, look at it, that's so cool!..
 
 And now, let's do this one, where a pawn takes an enemy pawn diagonally:
 
@@ -299,22 +395,10 @@ Ready?! Ready?! Now watch this!!
 
     ♙ + ur♟ -> . + ur♙
 
-Phew! Okay, let's take a break.
-
-
-## The algebra of chess moves
-
-Okay, we have an "algebra of chessboards", but at the end there, we also
-introduced a way to describe chess *moves*, for instance:
-
-    ♙ + ur♟ -> . + ur♙
-
-Now, let's say for a moment that we're not (yet) only interested in describing
-*valid* chess moves.
-We want a way to describe *any* chess move, even one where you teleport your
+Now, this operator in no way limits us to only describing *valid* chess moves.
+We can use it to describe *any* chess move, even one where you teleport your
 king to the other side of the board, remove your opponent's queen, and add
-two knights to your side, all in one move.
-Crazy, you say?!?! Well, all I say to you is:
+two knights to your side, all in one move:
 
     ♔ + uuuuuu. + uurr♛ -> . + uuuuuu♔ + uurr. + lll♘ + rrr♘
 
@@ -326,43 +410,51 @@ For example, moving a king one square up, then one square right?
 
     Moving a king one square up:
 
-    ♔ -> . + u♔
+    ♔ + u. -> . + u♔
 
     Moving a king one square right:
 
-    ♔ -> . + r♔
+    ♔ + r. -> . + r♔
 
-    Moving a king one square up, then one square right (all in one move):
+    Moving a king one square up and to the right (all in one move):
 
-    ♔ -> . + ur♔
+    ♔ + ur. -> . + ur♔
 
-I would like a way of saying that one move was made, and then another move
-was made; and I would like a way of saying that such a series of moves is
-equivalent to a single (possibly illegal!) move.
+I would like a way of saying that one move was (or can be) made, and then
+another move was (or can be) made.
+Let's show "doing one move, and then another" by simply putting two moves
+next to each other:
 
-    (♔ -> . + u♔)(♔ -> . + r♔) = (♔ -> . + ur♔)
+    Moving a king one square up, then one square right:
 
-Make sense? So, when we write two moves next to each other, that represents
-the move where we do those moves, one after another.
-But... does that always make sense?.. what does the following sequence of
-moves result in?
+    (♔ + u. -> . + u♔)(♔ + r. -> . + r♔)
 
-    (♔ -> . + u♔)(♖ -> . + u♖) = ???
 
-We moved a king upwards, and then we moved a rook upwards.
-So uhhh... I guess that one doesn't "simplify" into a single move?
-Or at least, not a move we can write with a single `->`?
+One question we might ask is: when (if ever) can a series of moves which
+follow each other be "simplified" into a single move?..
 
-For that matter, let's go back to our example of moving the king up and
-then to the right.
-We wrote it as an equation, as if moving your king up, and then moving your
-king right, was always the same as moving your king up-and-right.
+    Here is an equation, saying that moving a king one square up, then one
+    square right, all in one move, is the same as (equal to) moving a king
+    one square up and to the right, all in one move.
+    Is this equation actually correct, I wonder?..
+
+    (♔ + u. -> . + u♔)(♔ + r. -> . + r♔) = (♔ + ur. -> . + ur♔)
+
+    Here is another equation; on the left side, it describes moving a king
+    upwards, and then moving a rook upwards.
+    Does this expression "simplify"?.. doesn't seem like it!..
+
+    (♔ + u. -> . + u♔)(♖ + u. -> . + u♖) = ???
+
+Let's focus on the example of moving the king up and then to the right.
+We showed an equation above, which claimed that moving your king up, and
+then moving your king right, was the same as moving your king up-and-right.
 But... that's only the case if you only have one king.
-Which, in standard chess, you do.
+Which - in standard chess, at least - is indeed the case.
 But what about moving a pawn up, and then moving a pawn up? Does it have
 to be the same pawn each time?
 
-    (♙ -> . + u♙)(♙ -> . + u♙) = (♙ -> . + u. + uu♙)  ...???
+    (♙ + u. -> . + u♙)(♙ + u. -> . + u♙) = (♙ + u. + uu. -> . + u. + uu♙)  ...???
 
 If you are lost, that's probably because **this is not a good syntax for
 visualizing the board.**
@@ -372,7 +464,8 @@ here I'll give you a nice picture of a chessboard:
     .......
     ..♙.♙..
 
-    Applying the move (♙ -> . + u♙) could give us *either* of:
+    I'm going to argue that applying the move (♙ -> . + u♙) could give us
+    *either* of:
 
     ..♙....        ....♙..
     ....♙..   or   ..♙....
@@ -382,12 +475,12 @@ rules, so in case you're wondering -- I'm not *proving* anything here about
 this syntax.
 I'm actually coming up with the rules for it as I go along.
 I have decided, just now, that I would like for the meaning of a move like
-`♙ -> . + u♙` to be "find any one piece ♙, and replace it with `. + u♙`".
+`♙ + u. -> . + u♙` to be "find any one piece ♙ with an empty square above it,
+and move the piece onto the empty square".
 
-But a corollary of my decision is that this equation which I gave earlier
-is *not* true, according to our algebra of moves:
+But this means that the following equation is *not* correct:
 
-    (♙ -> . + u♙)(♙ -> . + u♙) = (♙ -> . + u. + uu♙)
+    (♙ + u. -> . + u♙)(♙ + u. -> . + u♙) = (♙ + u. + uu. -> . + u. + uu♙)
 
 ...that is, to tell someone "move some pawn up, and then move some pawn up",
 is not the same as to tell someone "move some pawn up twice".
@@ -473,15 +566,15 @@ Now, we can write:
     (% + u. -> . + u%){2}
 
 And now let's add a way to specify that the POI is a specific piece...
-let's use e.g. "%♖" to mean "when POI is a rook", "%♙" to mean "when
-POI is a pawn", etc:
+let's use e.g. "%♖: ..." to mean "choose some rook as the POI, and then...",
+and "%♙" to mean "choose some pawn as the POI, and then...", etc:
 
     Move a rook up, and then move it up again:
 
     %♖: (% + u. -> . + u%){2}
 
 Make sense?.. that's all a single move.
-And this "with % as" syntax isn't special; it can be stuck inside more
+And this "%♖: ..." syntax isn't special; it can be stuck inside more
 complicated combinations of moves, for instance:
 
     Move a single rook up twice, then move a single pawn up twice:
@@ -525,22 +618,18 @@ example upon example.
             * The meaning is, either f or g
     A move is one of:
         * nil
-            * The meaning is: no move, or the move which consists of
-              doing nothing, leaving the board exactly as it was
+            * The meaning is: the empty move, i.e. the move which consists
+              of doing nothing, leaving the board exactly as it was
         * f -> g (where f and g are board fragment patterns)
         * %p: M (where p is a chess piece and M is a move)
             * The meaning is: choose a specific piece on the board.
               It is now the POI (piece of interest).
-              Now move like M.
+              Now do M.
         * MN (where M and N are moves)
+            * The meaning is, do M and then do N.
             * Note that nil M = M = M nil, that is, "doing nothing and
               then doing M" is the same as simply doing M, and so is
               "doing M and then doing nothing".
-            * We would like for (f -> g)(h -> i) to be equivalent to
-              (f -> i) in some situations when the pattern h matches the
-                board fragment g.
-              I'm not fully clear on the specifics of this yet, so let's
-              look at it separately... see Appendix A!
         * M | N (where M and N are moves)
             * The meaning is "do either M or N"
             * Note: I belieeeeve that f -> (g | h) is probably equivalent
@@ -565,14 +654,14 @@ example upon example.
 
 Didja memorize all that?!?!?!
 
-Don't worry, if it makes your eyes glaze over, you're free to gloss over it.
+Don't worry, if it makes your eyes glaze over, you're free to ignore it.
 But the fact that I was able to write it down makes me more confident that
 our algebra is self-consistent, and we're not just waving our hands around
 saying crazy things.
 For instance, I reckon we could likely implement this algebra in software...
 hint hint...
 
-By the way, I have snuck in some new concepts! Did you notice?
+By the way, I snuck in some new concepts! Did you notice?
 
 For instance, there is now a board fragment `#`, which means "off the board".
 That is, whereas `.` means a square of the board, onto which a piece could be
@@ -688,7 +777,7 @@ Isn't that cool?
 We could simply gaze at it in wonder!
 
 Or we could use it to express chess variants, like
-[Irreversible Chess](entries/2025/jul/irreversible_chess.md)!
+[Irreversible Chess](/entries/2025/jul/irreversible_chess.md)!
 
 We could also implement a software library which can parse it, and use it
 to quickly play different chess variants!
