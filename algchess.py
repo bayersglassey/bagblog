@@ -1,5 +1,5 @@
 
-from typing import List, Dict, Tuple, Iterable
+from typing import List, Dict, Tuple, Iterable, Union
 
 
 Location = Tuple[int, int]
@@ -227,8 +227,8 @@ class Movement:
                 else:
                     raise ValueError(f"Unexpected: {m!r}")
             return x, y
-        elif isinstance(other, set):
-            return {self(x) for x in other}
+        elif isinstance(other, list):
+            return [self(x) for x in other]
         elif isinstance(other, dict):
             return {self(k): v for k, v in other.items()}
         elif isinstance(other, Movement):
@@ -265,8 +265,8 @@ def find(f: Board, g: Board) -> List[Movement]:
         ... ])
 
         >>> for m in find(f, g): print(m)
-        r^2 u
         1
+        r^2 u
 
     """
     if not f:
@@ -331,16 +331,153 @@ def find_and_replace(f: Board, g: Board, h: Board) -> List[Board]:
 
         >>> for b in find_and_replace(f, g, h): print_board(b)
         +---+
-        |...|
-        |p.p|
-        |..p|
-        +---+
-        +---+
         |..p|
         |...|
         |p.p|
+        +---+
+        +---+
+        |...|
+        |p.p|
+        |..p|
         +---+
 
     """
     return [replace(m(g), h) for m in find(f, h)]
 
+
+class Rule:
+    """
+
+        >>> pawn_move_search = parse_board([
+        ...     '.',
+        ...     'p',
+        ... ])
+
+        >>> pawn_move_replace = parse_board([
+        ...     'p',
+        ...     '.',
+        ... ])
+
+        >>> pawn_move_rule = FindAndReplaceRule(pawn_move_search, pawn_move_replace)
+
+        >>> pawn_take_1_search = parse_board([
+        ...     ' K',
+        ...     'p',
+        ... ])
+
+        >>> pawn_take_1_replace = parse_board([
+        ...     ' p',
+        ...     '.',
+        ... ])
+
+        >>> pawn_take_1_rule = FindAndReplaceRule(pawn_take_1_search, pawn_take_1_replace)
+
+        >>> pawn_take_2_search = parse_board([
+        ...     'K',
+        ...     ' p',
+        ... ])
+
+        >>> pawn_take_2_replace = parse_board([
+        ...     'p',
+        ...     ' .',
+        ... ])
+
+        >>> pawn_take_2_rule = FindAndReplaceRule(pawn_take_2_search, pawn_take_2_replace)
+
+        >>> pawn_rule = UnionRule([pawn_move_rule, pawn_take_1_rule, pawn_take_2_rule])
+
+        >>> board = parse_board([
+        ...     '....',
+        ...     '..K.',
+        ...     'pppp',
+        ...     '....',
+        ... ])
+
+        >>> for b in pawn_rule(board): print_board(b)
+        +----+
+        |....|
+        |.pK.|
+        |p.pp|
+        |....|
+        +----+
+        +----+
+        |....|
+        |p.K.|
+        |.ppp|
+        |....|
+        +----+
+        +----+
+        |....|
+        |..Kp|
+        |ppp.|
+        |....|
+        +----+
+        +----+
+        |....|
+        |..p.|
+        |p.pp|
+        |....|
+        +----+
+        +----+
+        |....|
+        |..p.|
+        |ppp.|
+        |....|
+        +----+
+
+    """
+
+    def __mul__(self, other):
+        return SequentialRule([self, other])
+
+    def __call__(self, boards: Union[Board, Iterable[Board]]) -> List[Board]:
+        if isinstance(boards, dict):
+            return unique_boards(self._apply(boards))
+        else:
+            return unique_boards(
+                out_board
+                for board in boards
+                for out_boards in self._apply(board)
+                for out_board in out_boards)
+
+    def _apply(self, board: Board) -> List[Board]:
+        raise NotImplementedError
+
+
+class FindAndReplaceRule(Rule):
+
+    def __init__(self, find_board: Board, replace_board: Board):
+        self.find_board = find_board
+        self.replace_board = replace_board
+
+    def _apply(self, board: Board) -> List[Board]:
+        return find_and_replace(self.find_board, self.replace_board, board)
+
+
+class UnionRule(Rule):
+
+    def __init__(self, rules):
+        self.rules = rules
+
+    def _apply(self, board: Board) -> List[Board]:
+        boards = []
+        for rule in self.rules:
+            boards.extend(rule(board))
+        return boards
+
+
+class SequentialRule(Rule):
+
+    def __init__(self, rules):
+        self.rules = rules
+
+    def __mul__(self, other):
+        rules = self.rules.copy()
+        rules.append(other)
+        return SequentialRule(rules)
+
+    def _apply(self, board: Board) -> List[Board]:
+        boards = [board]
+        for rule in self.rules:
+            boards = rule(boards)
+        return boards
