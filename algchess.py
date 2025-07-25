@@ -265,8 +265,8 @@ def find(f: Board, g: Board) -> List[Movement]:
         ... ])
 
         >>> for m in find(f, g): print(m)
-        1
         r^2 u
+        1
 
     """
     if not f:
@@ -276,10 +276,10 @@ def find(f: Board, g: Board) -> List[Movement]:
     # TODO: as an optimisation, try to pick an item for which c != '.'
     (x, y), c = next(iter(f.items()))
 
-    return {
+    return [
         Movement.slide(x2 - x, y2 - y)
         for (x2, y2), c2 in g.items()
-        if c2 == c and match(f, g, x2 - x, y2 - y)}
+        if c2 == c and match(f, g, x2 - x, y2 - y)]
 
 
 def replace(f: Board, g: Board) -> Board:
@@ -386,6 +386,11 @@ class Rule:
 
         >>> pawn_rule = UnionRule([pawn_move_rule, pawn_take_1_rule, pawn_take_2_rule])
 
+        >>> print(pawn_rule) #doctest: +NORMALIZE_WHITESPACE
+        ({(0, 1): '.', (0, 0): 'p'} -> {(0, 1): 'p', (0, 0): '.'}) |
+        ({(1, 1): 'K', (0, 0): 'p'} -> {(1, 1): 'p', (0, 0): '.'}) |
+        ({(0, 1): 'K', (1, 0): 'p'} -> {(0, 1): 'p', (1, 0): '.'})
+
         >>> board = parse_board([
         ...     '....',
         ...     '..K.',
@@ -396,14 +401,14 @@ class Rule:
         >>> for b in pawn_rule(board): print_board(b)
         +----+
         |....|
-        |.pK.|
-        |p.pp|
-        |....|
-        +----+
-        +----+
-        |....|
         |p.K.|
         |.ppp|
+        |....|
+        +----+
+        +----+
+        |....|
+        |.pK.|
+        |p.pp|
         |....|
         +----+
         +----+
@@ -425,6 +430,44 @@ class Rule:
         |....|
         +----+
 
+        >>> for b in (pawn_move_rule * pawn_move_rule)(board): print_board(b)
+        +----+
+        |p...|
+        |..K.|
+        |.ppp|
+        |....|
+        +----+
+        +----+
+        |....|
+        |ppK.|
+        |..pp|
+        |....|
+        +----+
+        +----+
+        |....|
+        |p.Kp|
+        |.pp.|
+        |....|
+        +----+
+        +----+
+        |.p..|
+        |..K.|
+        |p.pp|
+        |....|
+        +----+
+        +----+
+        |....|
+        |.pKp|
+        |p.p.|
+        |....|
+        +----+
+        +----+
+        |...p|
+        |..K.|
+        |ppp.|
+        |....|
+        +----+
+
     """
 
     def __mul__(self, other):
@@ -437,8 +480,7 @@ class Rule:
             return unique_boards(
                 out_board
                 for board in boards
-                for out_boards in self._apply(board)
-                for out_board in out_boards)
+                for out_board in self._apply(board))
 
     def _apply(self, board: Board) -> List[Board]:
         raise NotImplementedError
@@ -450,6 +492,12 @@ class FindAndReplaceRule(Rule):
         self.find_board = find_board
         self.replace_board = replace_board
 
+    def __str__(self):
+        return f'{self.find_board} -> {self.replace_board}'
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self.find_board}, {self.replace_board})'
+
     def _apply(self, board: Board) -> List[Board]:
         return find_and_replace(self.find_board, self.replace_board, board)
 
@@ -458,6 +506,12 @@ class UnionRule(Rule):
 
     def __init__(self, rules):
         self.rules = rules
+
+    def __str__(self):
+        return 'nil' if not self.rules else ' | '.join(f'({r})' for r in self.rules)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self.rules})'
 
     def _apply(self, board: Board) -> List[Board]:
         boards = []
@@ -470,6 +524,12 @@ class SequentialRule(Rule):
 
     def __init__(self, rules):
         self.rules = rules
+
+    def __str__(self):
+        return 'nil' if not self.rules else ''.join(f'({r})' for r in self.rules)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self.rules})'
 
     def __mul__(self, other):
         rules = self.rules.copy()
