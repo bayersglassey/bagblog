@@ -307,6 +307,28 @@ Here are some illustrations:
     |♟|♜|
     @-+-+
 
+Making sense?.. here's a bigger example of this "glue operator":
+
+    Here are the board fragments "♘", "u.", "ur.", and "uur♚":
+
+                              +-+
+                              |♚|
+           +-+       +-+      +-+
+           | |       | |
+    +-+    +-+       +-+
+    |♘|
+    @-+    @       @        @
+
+    ...and here is their "sum", "♘ + u. + ur. + uur♚":
+
+      +-+
+      |♚|
+    +-+-+
+    | | |
+    +-+-+
+    |♘|
+    @-+
+
 I hope it's clear that we could build up a picture of a chessboard this way;
 that is, we can express any chess position using this algebra.
 In fact, I'll prove it to you:
@@ -781,8 +803,8 @@ Or we could use it to express chess variants, like
 
 We could also implement a software library which can parse it, and use it
 to quickly play different chess variants!
-
-That sounds fun. Maybe we'll do that and link to it here...
+That sounds fun. Maybe we'll do that and
+[link to it here](algchess.py)...
 
 
 ## Appendix A: when do two moves simplify into one?
