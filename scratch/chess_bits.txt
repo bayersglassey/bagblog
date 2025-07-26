@@ -1,0 +1,48 @@
+
+Some unused stuff from "Irreversible Chess", "An Algebra of Chess", etc.
+
+
+===========================================================
+
+## Other rules
+
+In the basic variant - that is, chess where pieces must always move
+forwards, even when taking - there is not much point in running a pawn
+to the opposing rank, and converting it into a queen or any other piece,
+since it will be unable to move in any case.
+However, we might instead say that when a pawn is on the opposing rank,
+it may be replaced with a queen or other non-pawn piece on the *home*
+rank of the same file.
+
+That is, the pawn in the following diagram may be replaced by a queen,
+knight, bishop, or rook on the square marked with an "X":
+
+    .....♙..
+    ........
+    ........
+    ........
+    ........
+    ........
+    ........
+    .....X..
+
+This would be irreversible, but might add some flavour to the "late game"
+of our chess variant.
+
+Alternatively (or in addition), we might say that pawns are able to take
+(or at least give check) on the home rank from the opposing rank.
+That is, in the following diagram, the pawn may take on either of the
+squares marked with an "X":
+
+    .....♙..
+    ........
+    ........
+    ........
+    ........
+    ........
+    ........
+    ....X.X.
+
+This is particularly relevant if the enemy king has made it to your home
+rank!.. you can deliver check mate to him from across the board.
+
