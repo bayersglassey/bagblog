@@ -1,10 +1,277 @@
+"""This file contains an implementation of the algebra described in:
+entries/2025/jul/algebra_of_chess.md
 
-from typing import List, Dict, Tuple, Iterable, Union
+## Examples
+
+Let's define the basic pawn move, forward to an empty square:
+
+    >>> pawn_move_search = parse_board([
+    ...     '.',
+    ...     'p',
+    ... ])
+
+    >>> pawn_move_replace = parse_board([
+    ...     'p',
+    ...     '.',
+    ... ])
+
+    >>> pawn_move_rule = FindAndReplaceRule(pawn_move_search, pawn_move_replace)
+
+Now let's see, on an example board fragment, all possible pawn moves:
+
+    >>> board = parse_board([
+    ...     '....',
+    ...     '..K.',
+    ...     'pppp',
+    ...     '....',
+    ... ])
+
+    >>> for b in pawn_move_rule(board): print_board(b)
+    +----+
+    |....|
+    |p.K.|
+    |.ppp|
+    |....|
+    +----+
+    +----+
+    |....|
+    |.pK.|
+    |p.pp|
+    |....|
+    +----+
+    +----+
+    |....|
+    |..Kp|
+    |ppp.|
+    |....|
+    +----+
+
+Now, let's see all valid moves consisting of moving a pawn, then moving a
+pawn. Note that the two pawns don't need to be the same one!.. (we'll see
+how to specify that later on.)
+
+    >>> for b in (pawn_move_rule * pawn_move_rule)(board): print_board(b)
+    +----+
+    |p...|
+    |..K.|
+    |.ppp|
+    |....|
+    +----+
+    +----+
+    |....|
+    |ppK.|
+    |..pp|
+    |....|
+    +----+
+    +----+
+    |....|
+    |p.Kp|
+    |.pp.|
+    |....|
+    +----+
+    +----+
+    |.p..|
+    |..K.|
+    |p.pp|
+    |....|
+    +----+
+    +----+
+    |....|
+    |.pKp|
+    |p.p.|
+    |....|
+    +----+
+    +----+
+    |...p|
+    |..K.|
+    |ppp.|
+    |....|
+    +----+
+
+Now let's give pawns the ability to take kings diagonally...
+
+    >>> pawn_take_right_search = parse_board([
+    ...     ' K',
+    ...     'p',
+    ... ])
+
+    >>> pawn_take_right_replace = parse_board([
+    ...     ' p',
+    ...     '.',
+    ... ])
+
+    >>> pawn_take_right_rule = FindAndReplaceRule(pawn_take_right_search, pawn_take_right_replace)
+
+    >>> pawn_take_left_search = parse_board([
+    ...     'K',
+    ...     ' p',
+    ... ])
+
+    >>> pawn_take_left_replace = parse_board([
+    ...     'p',
+    ...     ' .',
+    ... ])
+
+    >>> pawn_take_left_rule = FindAndReplaceRule(pawn_take_left_search, pawn_take_left_replace)
+
+    >>> pawn_rule = OneOfRule([pawn_move_rule, pawn_take_right_rule, pawn_take_left_rule])
+
+Now that pawns can either move forward or take kings diagonally, what are
+all the valid moves from this position?..
+
+    >>> board = parse_board([
+    ...     '....',
+    ...     '..K.',
+    ...     'pppp',
+    ...     '....',
+    ... ])
+
+    >>> for b in pawn_rule(board): print_board(b)
+    +----+
+    |....|
+    |p.K.|
+    |.ppp|
+    |....|
+    +----+
+    +----+
+    |....|
+    |.pK.|
+    |p.pp|
+    |....|
+    +----+
+    +----+
+    |....|
+    |..Kp|
+    |ppp.|
+    |....|
+    +----+
+    +----+
+    |....|
+    |..p.|
+    |p.pp|
+    |....|
+    +----+
+    +----+
+    |....|
+    |..p.|
+    |ppp.|
+    |....|
+    +----+
+
+Now, let's see how to define rules which apply another rule repeatedly to
+the *same* piece.
+We'll use the special piece, '%', which means "the current piece of interest".
+There is a special Rule subclass, PieceOfInterestRule, which chooses a piece
+of interest, and then applies rules which can refer to that piece of interest
+as '%'.
+
+    >>> move_once_search = parse_board([
+    ...     '.',
+    ...     '%',
+    ... ])
+
+    >>> move_once_replace = parse_board([
+    ...     '%',
+    ...     '.',
+    ... ])
+
+    >>> move_once_rule = FindAndReplaceRule(move_once_search, move_once_replace)
+
+    A rule which says we can move any given pawn forwards twice.
+    >>> pawn_move_twice_rule = PieceOfInterestRule('p', move_once_rule ** 2)
+
+    >>> board = parse_board([
+    ...     '..K.',
+    ...     '....',
+    ...     'pppp',
+    ...     '....',
+    ... ])
+
+    >>> for b in pawn_move_twice_rule(board): print_board(b)
+    +----+
+    |p.K.|
+    |....|
+    |.ppp|
+    |....|
+    +----+
+    +----+
+    |.pK.|
+    |....|
+    |p.pp|
+    |....|
+    +----+
+    +----+
+    |..Kp|
+    |....|
+    |ppp.|
+    |....|
+    +----+
+
+How about rooks' ability to move forwards *one or more* times, until they hit
+an obstacle?..
+For this, we will use Rule.repeat(1), which means repeat from 1 to infinity.
+
+    >>> rook_move_rule = PieceOfInterestRule('R', move_once_rule.repeat(1))
+
+    >>> board = parse_board([
+    ...     '....',
+    ...     '...K',
+    ...     '....',
+    ...     'R..R',
+    ... ])
+
+    >>> for b in rook_move_rule(board): print_board(b)
+    +----+
+    |....|
+    |...K|
+    |R...|
+    |...R|
+    +----+
+    +----+
+    |....|
+    |R..K|
+    |....|
+    |...R|
+    +----+
+    +----+
+    |R...|
+    |...K|
+    |....|
+    |...R|
+    +----+
+    +----+
+    |....|
+    |...K|
+    |...R|
+    |R...|
+    +----+
+
+"""
+
+from typing import List, Dict, Tuple, Iterable, Optional, Union, FrozenSet
 
 
 Location = Tuple[int, int]
 LocationContents = str
 Board = Dict[Location, LocationContents]
+BoardKey = FrozenSet[Tuple[Location, LocationContents]]
+
+
+def board_key(board: Board) -> BoardKey:
+    """Returns a hashable representation of a Board"""
+    return frozenset(board.items())
+
+
+def replace_piece(p0: LocationContents, p1: LocationContents, board: Board, inplace=True) -> Board:
+    """Replace p0 with p1 in the given board"""
+    if inplace:
+        for k, p in board.items():
+            if p == p0:
+                board[k] = p1
+        return board
+    else:
+        return {k: p1 if p == p0 else p
+            for k, p in board.items()}
 
 
 def unique_boards(boards: Iterable[Board]) -> List[Board]:
@@ -25,7 +292,7 @@ def unique_boards(boards: Iterable[Board]) -> List[Board]:
     """
     found = {}
     for board in boards:
-        key = frozenset(board.items())
+        key = board_key(board)
         if key in found:
             continue
         found[key] = board
@@ -33,7 +300,7 @@ def unique_boards(boards: Iterable[Board]) -> List[Board]:
 
 
 def parse_board(lines, x0=0, y0=0) -> Board:
-    """
+    """Parses a board from the given text (or lines of text)
 
         >>> f = parse_board([
         ...     ' K ',
@@ -60,7 +327,7 @@ def parse_board(lines, x0=0, y0=0) -> Board:
 
 
 def print_board(f: Board, *, file=None, border=True):
-    """
+    """Prints the given board
 
         >>> print_board({})
         ++
@@ -237,14 +504,6 @@ class Movement:
             raise TypeError(type(other))
 
 
-def compose(*ff):
-    def composite(x):
-        for f in ff:
-            x = f(x)
-        return x
-    return composite
-
-
 def match(f: Board, g: Board, addx: int, addy: int) -> bool:
     """Is f a subset of g?"""
     return all(g.get((x + addx, y + addy)) == c for (x, y), c in f.items())
@@ -283,11 +542,11 @@ def find(f: Board, g: Board) -> List[Movement]:
 
 
 def replace(f: Board, g: Board) -> Board:
-    """
+    """Return g with part of it replaced by f.
 
         >>> f = parse_board([
         ...     ' BC',
-        ...     '  ',
+        ...     ' C',
         ... ])
 
         >>> g = parse_board([
@@ -298,6 +557,12 @@ def replace(f: Board, g: Board) -> Board:
         >>> print_board(replace(f, g))
         +---+
         |.BC|
+        |.C |
+        +---+
+
+        >>> print_board(replace(g, f))
+        +---+
+        |.AC|
         |.. |
         +---+
 
@@ -308,7 +573,7 @@ def replace(f: Board, g: Board) -> Board:
 
 
 def find_and_replace(f: Board, g: Board, h: Board) -> List[Board]:
-    """
+    """Returns all possible boards which are like h with f replaced by g.
 
         >>> f = parse_board([
         ...     '.',
@@ -319,9 +584,6 @@ def find_and_replace(f: Board, g: Board, h: Board) -> List[Board]:
         ...     'p',
         ...     '.',
         ... ])
-
-        Together, f and g represent the rule that you can move a pawn
-        forward into an empty square of the chessboard.
 
         >>> h = parse_board([
         ...     '...',
@@ -346,132 +608,25 @@ def find_and_replace(f: Board, g: Board, h: Board) -> List[Board]:
 
 
 class Rule:
+    """A rule is a function which maps a board to a set of possible boards,
+    i.e. a set of possible "moves" a player might make, taking the board
+    from one position to another.
+
+    This is an abstract base class; only its subclasses should be
+    instantiated.
     """
 
-        >>> pawn_move_search = parse_board([
-        ...     '.',
-        ...     'p',
-        ... ])
+    def __init__(self):
+        raise NotImplementedError("To be implemented by subclasses")
 
-        >>> pawn_move_replace = parse_board([
-        ...     'p',
-        ...     '.',
-        ... ])
-
-        >>> pawn_move_rule = FindAndReplaceRule(pawn_move_search, pawn_move_replace)
-
-        >>> pawn_take_1_search = parse_board([
-        ...     ' K',
-        ...     'p',
-        ... ])
-
-        >>> pawn_take_1_replace = parse_board([
-        ...     ' p',
-        ...     '.',
-        ... ])
-
-        >>> pawn_take_1_rule = FindAndReplaceRule(pawn_take_1_search, pawn_take_1_replace)
-
-        >>> pawn_take_2_search = parse_board([
-        ...     'K',
-        ...     ' p',
-        ... ])
-
-        >>> pawn_take_2_replace = parse_board([
-        ...     'p',
-        ...     ' .',
-        ... ])
-
-        >>> pawn_take_2_rule = FindAndReplaceRule(pawn_take_2_search, pawn_take_2_replace)
-
-        >>> pawn_rule = UnionRule([pawn_move_rule, pawn_take_1_rule, pawn_take_2_rule])
-
-        >>> print(pawn_rule) #doctest: +NORMALIZE_WHITESPACE
-        ({(0, 1): '.', (0, 0): 'p'} -> {(0, 1): 'p', (0, 0): '.'}) |
-        ({(1, 1): 'K', (0, 0): 'p'} -> {(1, 1): 'p', (0, 0): '.'}) |
-        ({(0, 1): 'K', (1, 0): 'p'} -> {(0, 1): 'p', (1, 0): '.'})
-
-        >>> board = parse_board([
-        ...     '....',
-        ...     '..K.',
-        ...     'pppp',
-        ...     '....',
-        ... ])
-
-        >>> for b in pawn_rule(board): print_board(b)
-        +----+
-        |....|
-        |p.K.|
-        |.ppp|
-        |....|
-        +----+
-        +----+
-        |....|
-        |.pK.|
-        |p.pp|
-        |....|
-        +----+
-        +----+
-        |....|
-        |..Kp|
-        |ppp.|
-        |....|
-        +----+
-        +----+
-        |....|
-        |..p.|
-        |p.pp|
-        |....|
-        +----+
-        +----+
-        |....|
-        |..p.|
-        |ppp.|
-        |....|
-        +----+
-
-        >>> for b in (pawn_move_rule * pawn_move_rule)(board): print_board(b)
-        +----+
-        |p...|
-        |..K.|
-        |.ppp|
-        |....|
-        +----+
-        +----+
-        |....|
-        |ppK.|
-        |..pp|
-        |....|
-        +----+
-        +----+
-        |....|
-        |p.Kp|
-        |.pp.|
-        |....|
-        +----+
-        +----+
-        |.p..|
-        |..K.|
-        |p.pp|
-        |....|
-        +----+
-        +----+
-        |....|
-        |.pKp|
-        |p.p.|
-        |....|
-        +----+
-        +----+
-        |...p|
-        |..K.|
-        |ppp.|
-        |....|
-        +----+
-
-    """
-
-    def __mul__(self, other):
+    def __mul__(self, other: 'Rule') -> 'SequentialRule':
         return SequentialRule([self, other])
+
+    def __pow__(self, exp: int) -> 'SequentialRule':
+        return SequentialRule([self] * exp)
+
+    def repeat(self, at_least: int = 0, at_most: Optional[int] = None) -> 'RepeatRule':
+        return RepeatRule(self, at_least, at_most)
 
     def __call__(self, boards: Union[Board, Iterable[Board]]) -> List[Board]:
         if isinstance(boards, dict):
@@ -483,35 +638,39 @@ class Rule:
                 for out_board in self._apply(board))
 
     def _apply(self, board: Board) -> List[Board]:
-        raise NotImplementedError
+        raise NotImplementedError("To be implemented by subclasses")
 
 
 class FindAndReplaceRule(Rule):
+    """A rule which consists of finding a given board fragment (the "pattern")
+    and replacing it with another (the "replacement").
+    """
 
-    def __init__(self, find_board: Board, replace_board: Board):
-        self.find_board = find_board
-        self.replace_board = replace_board
+    def __init__(self, pattern: Board, replacement: Board):
+        self.pattern = pattern
+        self.replacement = replacement
 
     def __str__(self):
-        return f'{self.find_board} -> {self.replace_board}'
+        return f'{self.pattern} -> {self.replacement}'
 
     def __repr__(self):
-        return f'{self.__class__.__name__}({self.find_board}, {self.replace_board})'
+        return f'{self.__class__.__name__}({self.pattern!r}, {self.replacement!r})'
 
     def _apply(self, board: Board) -> List[Board]:
-        return find_and_replace(self.find_board, self.replace_board, board)
+        return find_and_replace(self.pattern, self.replacement, board)
 
 
-class UnionRule(Rule):
+class OneOfRule(Rule):
+    """A rule which consists of applying exactly one of a set of other rules"""
 
-    def __init__(self, rules):
+    def __init__(self, rules: List[Rule]):
         self.rules = rules
 
     def __str__(self):
         return 'nil' if not self.rules else ' | '.join(f'({r})' for r in self.rules)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}({self.rules})'
+        return f'{self.__class__.__name__}({self.rules!r})'
 
     def _apply(self, board: Board) -> List[Board]:
         boards = []
@@ -521,23 +680,214 @@ class UnionRule(Rule):
 
 
 class SequentialRule(Rule):
+    """A rule which consists of applying a sequence of other rules, one
+    after another.
+    """
 
-    def __init__(self, rules):
+    def __init__(self, rules: List[Rule]):
         self.rules = rules
 
     def __str__(self):
         return 'nil' if not self.rules else ''.join(f'({r})' for r in self.rules)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}({self.rules})'
+        return f'{self.__class__.__name__}({self.rules!r})'
 
-    def __mul__(self, other):
-        rules = self.rules.copy()
-        rules.append(other)
+    def __mul__(self, other: Rule) -> 'SequentialRule':
+        if isinstance(other, SequentialRule):
+            rules = self.rules + other.rules
+        else:
+            rules = self.rules.copy()
+            rules.append(other)
         return SequentialRule(rules)
+
+    def __pow__(self, exp: int) -> 'SequentialRule':
+        return SequentialRule(self.rules * exp)
 
     def _apply(self, board: Board) -> List[Board]:
         boards = [board]
         for rule in self.rules:
             boards = rule(boards)
         return boards
+
+
+class PieceOfInterestRule(Rule):
+    """A rule which consists of choosing a "piece of interest" on the board,
+    then applying another rule with the chosen piece replaced by '%'.
+    """
+
+    def __init__(self, piece: LocationContents, rule: Rule):
+        self.piece = piece
+        self.rule = rule
+
+    def __str__(self):
+        return f'%{self.piece}: {self.rule}'
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self.piece!r}, {self.rule!r})'
+
+    def _apply(self, board: Board) -> List[Board]:
+        if any(v == '%' for v in board.values()):
+            return self.rule(board)
+        boards = []
+        keys = list(board)
+        for k in keys:
+            if board[k] != self.piece:
+                continue
+            board[k] = '%'
+            try:
+                boards.extend(
+                    replace_piece('%', self.piece, board)
+                    for board in self.rule(board))
+            finally:
+                board[k] = self.piece
+        return boards
+
+
+class RepeatRule(Rule):
+    """A rule which consists of applying another rule repeatedly.
+
+    Example usage:
+
+        These rules describe a piece ('u' or 'd') which travels up and down,
+        bouncing off another piece ('B'), which is stationary.
+        >>> rule = OneOfRule([
+        ...     FindAndReplaceRule({(0, 0): 'u', (0, 1): '.'}, {(0, 0): '.', (0, 1): 'u'}),
+        ...     FindAndReplaceRule({(0, 0): 'u', (0, 1): 'B'}, {(0, 0): 'd', (0, 1): 'B'}),
+        ...     FindAndReplaceRule({(0, 0): '.', (0, 1): 'd'}, {(0, 0): 'd', (0, 1): '.'}),
+        ...     FindAndReplaceRule({(0, 0): 'B', (0, 1): 'd'}, {(0, 0): 'B', (0, 1): 'u'}),
+        ... ])
+
+        The initial board has the bouncing piece travelling upwards, trapped
+        between two stationary pieces.
+        The bouncing piece should bounce back and forth between the stationary
+        ones.
+        >>> board = parse_board([
+        ...     'B',
+        ...     '.',
+        ...     'u',
+        ...     '.',
+        ...     'B',
+        ... ])
+
+        If the rule is applied between 2 and 4 times, these are the possible
+        board positions:
+        >>> for b in rule.repeat(2, 4)(board): print_board(b)
+        +-+
+        |B|
+        |d|
+        |.|
+        |.|
+        |B|
+        +-+
+        +-+
+        |B|
+        |.|
+        |d|
+        |.|
+        |B|
+        +-+
+        +-+
+        |B|
+        |.|
+        |.|
+        |d|
+        |B|
+        +-+
+
+        If the rule is fired 0 or more times, these are the possible board
+        positions:
+        >>> for b in rule.repeat()(board): print_board(b)
+        +-+
+        |B|
+        |.|
+        |u|
+        |.|
+        |B|
+        +-+
+        +-+
+        |B|
+        |u|
+        |.|
+        |.|
+        |B|
+        +-+
+        +-+
+        |B|
+        |d|
+        |.|
+        |.|
+        |B|
+        +-+
+        +-+
+        |B|
+        |.|
+        |d|
+        |.|
+        |B|
+        +-+
+        +-+
+        |B|
+        |.|
+        |.|
+        |d|
+        |B|
+        +-+
+        +-+
+        |B|
+        |.|
+        |.|
+        |u|
+        |B|
+        +-+
+
+    """
+
+    def __init__(self, rule: Rule, at_least: int = 0, at_most: Optional[int] = None):
+        if at_most is not None and at_most < at_least:
+            raise TypeError(f"Invalid args: {at_most} < {at_least}")
+        self.rule = rule
+        self.at_least = at_least
+        self.at_most = at_most
+
+    def __str__(self):
+        brackets_part = f'{self.at_least}'
+        if self.at_most is not None:
+            brackets_part = f'{brackets_part}, {self.at_most}'
+        brackets_part = '{' + brackets_part + '}'
+        return f'({self.rule}){brackets_part}'
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self.rule!r}, {self.at_least!r}, {self.at_most!r})'
+
+    def _apply(self, board: Board) -> List[Board]:
+        boards = [board]
+        for i in range(self.at_least):
+            boards = self.rule(boards)
+        all_boards = boards
+        if self.at_most is not None:
+            # We have already applied our rule self.at_least times, resulting
+            # in all_boards.
+            # Now we apply our rule (self.at_most - self.at_least) more times,
+            # extending all_boards each time.
+            for i in range(self.at_most - self.at_least):
+                boards = self.rule(boards)
+                all_boards.extend(boards)
+        else:
+            # We apply our rule "forever"!.. except, to avoid an infinite
+            # loop, we actually only apply our rule while we find new boards
+            # which we haven't seen yet.
+            board_keys = {board_key(b) for b in boards}
+            while True:
+                new_boards = []
+                for new_board in self.rule(boards):
+                    key = board_key(new_board)
+                    if key in board_keys:
+                        continue
+                    new_boards.append(new_board)
+                    board_keys.add(key)
+                if not new_boards:
+                    break
+                all_boards.extend(new_boards)
+                boards = new_boards
+        return unique_boards(all_boards)
