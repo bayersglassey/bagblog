@@ -38,50 +38,58 @@ And another rule says, you can replace `1` with `20 / 20` (20 divided by 20):
 
     x * 20 / 20
 
-Right? Notice how at one point, we had x all by itself.
-And sometimes, we're playing a game with algebra where we want to do that,
-like when we have an equation, and we're trying to "solve for x":
+Notice how, at one point, we had x all by itself.
+And there is a kind of game we can play, where we have an equation, and we
+try to "solve for x":
 
     3x + 4 = 5
+
+    3x = 1
+
+    x = 1/3
 
 But our goal of solving for x isn't one of the rules of algebra; it's just
 something we layer on top.
 Algebra doesn't tell us that we *have* to solve for x; in fact, it says it's
 totally fine if we introduce a new variable, e.g. like this:
 
-    3x + 4 = 5 + 7y - 7y
+    3x + 4 = 5
 
-We could turn this into a sort of multiplayer game, where there's an equation
-written down, and players take turns applying rules of algebra to it, one at
-a time.
+    3x + 4 + 7y = 5 + 7y
+
+In fact, there are many goals we could layer on top of algebra.
+For instance, we could have a game with multiple players, and an equation
+written down, and the players take turns applying rules of algebra to it.
 Maybe the players are trying to work together to solve for a variable?..
-Maybe each player is trying to solve for a different variable?..
-Maybe there are a whole bunch of players, and they're allowed to form alliances,
-and each player has a secret goal which they keep secret from the other players?..
-But in any case, the rules of algebra tell us that every time a player makes
-a "move", they are only allowed to change the equation in certain ways.
+or maybe each player is trying to solve for a different variable?..
+or maybe there are a whole bunch of players, and they're allowed to form
+alliances, and each player has a goal which they keep secret from the other
+players?..
+But in any case, the rules of algebra tell us what changes the players
+are allowed to make to the equation when they "move".
 
 Just let that idea float around in your mind for a minute: algebra is just
 some rules, without a goal.
 The rules have to do with what's allowed to be written down on a piece of
 paper, and how people are allowed to make changes to it.
 
-And I think, when you open your mind to that fact, you can start to see
+And I think, when you open your mind to that idea, you can start to see
 a connection between algebra and board games.
-In algebra, when we write something down on a piece of paper, that piece
-of paper is like the board in chess.
-Let's say that algebra and chess are both games, and the paper and board
-are called the game's "state".
-Some of the game rules are an algebra describing how the state is allowed
-to change.
-When a player takes their turn, they do so by changing the game's state
-according to the rules of the game's algebra.
-Other game rules describe the players, their goals, the order in which
-they take turns, etc; but let's forget about those rules for now, and
-focus on the algebra.
+Writing an algebraic expression on a piece of paper is like putting pieces
+down on a board.
+Some of a board game's rule are an algebra describing how the board is
+allowed to change, or how the pieces move around on it.
+Other rules describe the players, their goals, the order in which they take
+turns, etc; but let's forget about those rules for now, and focus on the
+algebra of the board.
+
+We'll focus on chess for now, and build an algebra in two layers, one
+building upon the other:
+* an algebra of chess positions
+* an algebra of chess moves
 
 
-## The algebra of chessboard fragments
+## An algebra of chess positions
 
 Here is a chess board:
 
@@ -141,10 +149,13 @@ Now, here is another rule:
 
     .   .   ♖
     .   ♖   .
-    ♖   .   .
+    ♖   .   .    ...etc
     .   .   .
 
-An interesting question here is, "how can we express this rule more simply"?
+An interesting question here is, how can we express this rule without using
+"etc"?.. that is, how do we express a potentially infinite rule (if you want
+to support chessboards of any size, which I think we should, as a matter of
+principle) in a finite way?
 And I think it's clear that we could express it in terms of the following rule,
 if we had a way to apply it repeatedly:
 
@@ -162,10 +173,10 @@ rule that a rook can travel forward one empty square at a time.
 Keep that in mind!
 
 Now, let's gear up like proper mathematicians and start coming up with some
-syntax here.
+syntax.
 We're going to come up with a way to describe fragments of chess boards as
 algebraic expressions.
-In fact, we're going to come up with an "algebra of chessboard fragments".
+In fact, we're going to come up with an "algebra of chess positions".
 Here we go!..
 
 Here is a "board fragment":
@@ -174,22 +185,21 @@ Here is a "board fragment":
     ....
      .♔♙
 
-...it has some empty squares, and some squares with pieces on them.
+...it has some empty squares (shown as "."), and some squares with pieces
+on them.
 It has no edge: it's like a small cut-out from a full chessboard.
-The full chessboard is also a board fragment, though; and so is the "empty
-board fragment", which consists of... nothing. No squares, no pieces.
 
-Let's also say that all board fragments have a center.
+Let's also say that all board fragments have a centre.
 So, the following diagram could be for many different board fragments,
-depending on where we say its "center" is:
+depending on where we say its "centre" is:
 
      .
     .♖.
      .
 
-The center is always at the *corners* of the board's grid of squares.
+The centre is always at the *corners* of the board's grid of squares.
 So for instance, here are two different board fragments, drawn with the
-grid visible, and the center indicated with "@":
+grid visible, and the centre indicated with "@":
 
       +-+
       | |
@@ -212,43 +222,10 @@ grid visible, and the center indicated with "@":
 Now let's come up with an easier way to describe board fragments without
 having to draw them out.
 
-The symbol `0` will mean the empty board fragment.
-
 The symbol `.` will mean the board fragment consisting of an empty square,
-with this board fragment's center at the square's bottom-left corner.
+with the centre at the square's bottom-left corner.
 The symbols `♟`, `♙`, `♚`, `♔`, etc are like `.`, but with the indicated
 piece sitting on the square.
-
-There are also "movements". These are ways of moving a board fragment around
-relative to its center.
-Imagine putting your finger on a chessboard (or a little cut-out fragment of
-a chessboard) and sliding it around: you could slide it to the left, to the
-right...
-
-The basic movements are `u`, `d`, `l`, and `r`, meaning movements of the board
-fragment 1 square up, down, left, and right relative to its center.
-You could also think of these movements as moving the center relative to the
-rest of the board fragment, but trust me for now that it's more useful to
-think of sliding the board relative to the center.
-
-There is also the "identity movement", `1`, which means no movement at all.
-
-Given a board fragment f and movement m, we can apply m to f, resulting in
-another board fragment.
-For instance, `u.` is the board fragment consisting of `.` slid upwards by
-one square's width relative to the center.
-
-Movements can be combined with each other; for instance, `ur` means a movement
-of one square to the right, followed by a movement of one square up.
-That's a diagonal movement!.. and note that `ur = ru`, that is, it doesn't
-matter whether we move up or right "first": a movement is only defined by
-where it ends up.
-
-Here's an illustration of some board fragments, with "@" showing the center:
-
-    The empty board fragment, "0":
-
-    @
 
     The board fragment ".":
 
@@ -256,11 +233,66 @@ Here's an illustration of some board fragments, with "@" showing the center:
     | |
     @-+
 
-    The board fragment "r." (i.e. "." moved to the right):
+    The board fragment "♟":
+
+    +-+
+    |♟|
+    @-+
+
+The symbol `0` will mean the empty board fragment, which consists of...
+nothing. No empty squares, no squares with pieces on them, just a "centre"
+floating in a void:
+
+    The empty board fragment, "0":
+
+    @
+
+There are also "movements". These are ways of moving a board fragment around
+relative to its centre.
+Imagine putting your finger on a chessboard (or a little cut-out fragment of
+a chessboard) and sliding it around: you could slide it to the left, to the
+right... and all the pieces sitting on it would slide around with it.
+That's a "movement".
+
+The basic movements are `u`, `d`, `l`, and `r`, meaning movements of a board
+fragment 1 square up, down, left, and right relative to its centre.
+You could also think of these movements as moving the centre relative to the
+rest of the board fragment, but trust me for now that it's more useful to
+think of sliding the board relative to the centre.
+
+Given a board fragment f and movement m, we can apply m to f, resulting in
+another board fragment.
+For instance, `u.` is the board fragment consisting of `.` slid upwards by
+one square's width relative to the centre.
+
+    The board fragment "u.":
+
+    +-+
+    | |
+    +-+
+
+    @
+
+    The board fragment "l♝":
+
+    +-+
+    |♝|
+    +-@
+
+    The board fragment "r♟":
 
       +-+
-      | |
+      |♟|
     @ +-+
+
+There is also the "identity movement", `1`, which means no movement at all.
+That is, for any board fragment f, `1f = f`.
+
+Movements can be combined with each other; for instance, `ur` means a movement
+of one square to the right, followed by a movement of one square up.
+That's a diagonal movement!.. and note that `ur = ru`, that is, it doesn't
+matter whether we move up or right "first": a movement is only defined by
+where it ends up.
 
     The board fragment "ru." (i.e. "." moved up and to the right):
 
@@ -270,28 +302,16 @@ Here's an illustration of some board fragments, with "@" showing the center:
 
     @
 
-    The board fragment "l." (i.e. "." moved to the left):
+    The board fragment "rr♟" (i.e. "♟" moved to the right twice):
 
-    +-+
-    | |
-    +-@
+        +-+
+        |♟|
+    @   +-+
 
-    The board fragment "♟":
-
-    +-+
-    |♟|
-    @-+
-
-    The board fragment "r♟" (i.e. "♟" moved to the right):
-
-      +-+
-      |♟|
-    @ +-+
-
-Making sense so far?..
-
-There is also an operator, `+`, which takes two board fragments and glues
-them together, keeping their centers lined up.
+So far, we've made board fragments consisting of a single square.
+Now we need a way to describe board fragments with multiple squares.
+So let's add an operator, `+`, which takes two board fragments and glues
+them together, keeping their centres lined up.
 But you're never allowed to glue squares or pieces on top of each other!..
 Here are some illustrations:
 
@@ -307,7 +327,27 @@ Here are some illustrations:
     |♟|♜|
     @-+-+
 
-Making sense?.. here's a bigger example of this "glue operator":
+    The board fragment ". + rru♘" (notice, board fragments don't need to
+    be connected - they can have squares floating off by themselves):
+
+        +-+
+        |♘|
+    +-+ +-+
+    | |
+    @-+
+
+By the way, remember how we said that the symbol for the "empty fragment"
+is `0`?.. we chose the symbols `0` and `+` on purpose, because `f + 0 = f`
+for any board fragment f, just like with the number 0 and addition.
+And `f + g = g + f`, for board fragments as well as numbers!
+We could have chosen different symbols for chess algebra, but if you're
+used to algebra with numbers, it's handy to use familiar symbols which
+follow similar rules.
+In fact, if you think about applying movements as being a "multiplication",
+then you may notice certain rules of multiplication are true for chess
+algebra as well, like `m(f + g) = mf + mg`.
+
+Everything making sense?.. here's a bigger example of this "glue operator":
 
     Here are the board fragments "♘", "u.", "ur.", and "uur♚":
 
@@ -329,11 +369,21 @@ Making sense?.. here's a bigger example of this "glue operator":
     |♘|
     @-+
 
-I hope it's clear that we could build up a picture of a chessboard this way;
-that is, we can express any chess position using this algebra.
-In fact, I'll prove it to you:
+    ...and we can apply movements to entire boards!
+    So, here is that sum moved once to the right, i.e. "r(♘ + u. + ur. + uur♚)":
 
-    This board fragment (with the center at the bottom-left corner)...
+        +-+
+        |♚|
+      +-+-+
+      | | |
+      +-+-+
+      |♘|
+    @ +-+
+
+We now have the power to build an entire chessboard out of algebra!
+Look, I'll prove it...
+
+    This board fragment (with the centre at the bottom-left corner)...
 
     ♜♞♝♚♛♝♞♜
     ♟♟♟♟♟♟♟♟
@@ -346,7 +396,7 @@ In fact, I'll prove it to you:
 
     ...can be written as:
 
-    uuuuuuu(♜ + r(♞ + r(♝ + r(♚ + r(♛ + r(♝ + r(♞ + r(♜)))))) +
+    uuuuuuu(♜ + r(♞ + r(♝ + r(♚ + r(♛ + r(♝ + r(♞ + r♜))))))) +
      uuuuuu(♟ + r(♟ + r(♟ + r(♟ + r(♟ + r(♟ + r(♟ + r♟))))))) +
       uuuuu(. + r(. + r(. + r(. + r(. + r(. + r(. + r.))))))) +
        uuuu(. + r(. + r(. + r(. + r(. + r(. + r(. + r.))))))) +
@@ -355,12 +405,152 @@ In fact, I'll prove it to you:
           u(♙ + r(♙ + r(♙ + r(♙ + r(♙ + r(♙ + r(♙ + r♙))))))) +
            (♖ + r(♘ + r(♗ + r(♔ + r(♕ + r(♗ + r(♘ + r♖)))))))
 
-Right?.. Do you see?.. Do you see???
+Wheee!
 
-Next, we'll see how to express valid chess moves.
+And if you don't think that looks very nice, then let's add a couple of
+operators to make it easier to build up board fragments.
+Let's say, for any fragments f and g, `fg = f + rg`, and `f;g = f + ug`.
+We can use these operators to build up horizontal (with `fg`) and vertical
+(with `f;g`) lines of pieces:
 
+    The board fragment "♖..;♙♗♙;.♙.", that is,
+    "(♖ + r. + rr.) + u(♙ + r♗ + rr♙) + uu(. + r♙ + rr.)":
 
-## A note on abstract algebra
+    .♙.
+    ♙♗♙
+    ♖..
+
+    The board fragment "...;♙0♙;r♞", that is,
+    "(. + r. + rr.) + u(♙ + rr♙) + uur♞":
+
+     ♞
+    ♙ ♙
+    ...
+
+Also, because this is an algebra, we can use variables, write equations,
+define functions, etc.
+For instance, if `x = ♙;.;♟`, then `xxx` is two lines of 3 pawns opposing
+each other:
+
+    ♟♟♟
+    ...
+    ♙♙♙
+
+Let's finish up our algebra of positions with operators for rotating and
+flipping the board, and reversing the colours of chess pieces.
+
+Let's define an operator `R`, which means a 90 degree clockwise rotation
+of a board fragment.
+This a "movement", like u, d, l, and r: imagine putting your fingers on
+a chess board, and rotating it clockwise, along with all its pieces:
+
+    The board fragment "r♟ + rd.":
+
+          +-+
+          |♟|
+        @ +-+
+          | |
+          +-+
+
+    The board fragment "R(r♟ + rd.)", i.e. "r♟ + rd. rotated around the
+    centre by 90 degrees counter-clockwise":
+
+      +-+-+
+      |♟| |
+      +-+-+
+
+        @
+
+    The board fragment "R²(r♟ + rd.)", i.e. "r♟ + rd. rotated around the
+    centre by 180 degrees counter-clockwise":
+
+    +-+
+    | |
+    +-+ @
+    |♟|
+    +-+
+
+And how about `F`, which is a horizontal flip around the centre?..
+
+    The board fragment "♖♟.":
+
+          +-+-+-+
+          |♖|♟| |
+          @-+-+-+
+
+    The board fragment "F(♖♟.)", i.e. "♖♟. flipped
+    horizontally":
+
+    +-+-+-+
+    | |♟|♖|
+    +-+-+-@
+
+    The board fragment "RF(♖♟.)",
+    i.e. "F(♖♟.) rotated 90 degrees counter-clockwise",
+    i.e. "♖♟. flipped horizontally and then rotated 90 degrees
+    counter-clockwise":
+
+        +-@
+        |♖|
+        +-+
+        |♟|
+        +-+
+        | |
+        +-+
+
+And how about `C`, which reverses the colours of the pieces?..
+
+    The board fragment "♙ + r. + rr♗ + ur♟ + urr♞":
+
+      +-+-+
+      |♟|♜|
+    +-+-+-+
+    |♙| |♗|
+    @-+-+-+
+
+    The board fragment "C(♙ + r. + rr♗ + ur♟ + urr♞)":
+
+      +-+-+
+      |♙|♖|
+    +-+-+-+
+    |♟| |♝|
+    @-+-+-+
+
+We can combine these operators together, for instance `CRr` is the operator
+which moves a board fragment right, then rotates it 90 degrees
+counter-clockwise, then reverses the colours of all the pieces.
+
+The "movement" operators, including colour reversal, all distrubute over the
+glue operator, `+` - that is to say, for any movement m and board fragments
+f and g, `m(f + g) = mf + mg`.
+It may be helpful to see an example:
+
+    The board fragment "♖ + r♟ + rr.":
+
+          +-+-+-+
+          |♖|♟| |
+          @-+-+-+
+
+    The board fragment "r(♖ + r♟ + rr.)":
+
+            +-+-+-+
+            |♖|♟| |
+          @ +-+-+-+
+
+    The board fragments "r♖", "rr♟", and "rrr.":
+
+            +-+       +-+         +-+
+            |♖|       |♟|         | |
+          @ +-+   @   +-+   @     +-+
+
+    The board fragment "r♖ + rr♟ + rrr.", which can be seen to be the
+    same as "r(♖ + r♟ + rr.)" above:
+
+            +-+-+-+
+            |♖|♟| |
+          @ +-+-+-+
+
+## Side note: abstract algebra, group theory, ring theory
 
 By the way, for any movement m, it's the case that `1m = m = m1`, and `m0 = 0`.
 It's also the case that every movement has an inverse movement n, such that
@@ -386,7 +576,7 @@ But you may or may not be interested in the following:
 * https://en.wikipedia.org/wiki/Algebraic_geometry
 
 
-## The algebra of chess moves
+## An algebra of chess moves
 
 Okay! Earlier, we said that this was a valid chess move:
 
@@ -399,7 +589,10 @@ Okay! Earlier, we said that this was a valid chess move:
     .
 
 Now let's express that move with our chess algebra, using a new operator,
-`->`, which says that one board fragment can be changed into another:
+`->`, which says that one board fragment can be replaced with another.
+We're going to call this a "rule":
+
+    The rule "♙ + u. can be replaced with . + u♙":
 
     ♙ + u. -> . + u♙
 
@@ -442,15 +635,12 @@ For example, moving a king one square up, then one square right?
 
     ♔ + ur. -> . + ur♔
 
-I would like a way of saying that one move was (or can be) made, and then
-another move was (or can be) made.
 Let's show "doing one move, and then another" by simply putting two moves
 next to each other:
 
     Moving a king one square up, then one square right:
 
     (♔ + u. -> . + u♔)(♔ + r. -> . + r♔)
-
 
 One question we might ask is: when (if ever) can a series of moves which
 follow each other be "simplified" into a single move?..
@@ -499,6 +689,8 @@ I'm actually coming up with the rules for it as I go along.
 I have decided, just now, that I would like for the meaning of a move like
 `♙ + u. -> . + u♙` to be "find any one piece ♙ with an empty square above it,
 and move the piece onto the empty square".
+Or, another way to interpret it is, "what are all the positions which could
+result from making this move".
 
 But this means that the following equation is *not* correct:
 
@@ -700,13 +892,13 @@ We need this to define certain valid pawn moves:
 
 I have also added a rotation movement, R. Here is an illustration of it:
 
-    The board fragment "r♟" (recall, @ is the board fragment's center):
+    The board fragment "r♟" (recall, @ is the board fragment's centre):
 
           +-+
           |♟|
         @ +-+
 
-    The board fragment "Ru♟", i.e. "u♟ rotated around the center by 90
+    The board fragment "Ru♟", i.e. "u♟ rotated around the centre by 90
     degrees counter-clockwise":
 
       +-+
@@ -715,7 +907,7 @@ I have also added a rotation movement, R. Here is an illustration of it:
 
         @
 
-    The board fragment "R²u♟", i.e. "u♟ rotated around the center by 180
+    The board fragment "R²u♟", i.e. "u♟ rotated around the centre by 180
     degrees counter-clockwise":
 
     +-+ @
@@ -798,7 +990,9 @@ Isn't that cool?
 
 We could simply gaze at it in wonder!
 
-Or we could use it to express chess variants, like
+Or we could use it to express other games, like checkers or Othello!
+Even ones with boards which aren't a square grid, like Chinese checkers!
+Or we could express chess variants, like
 [Irreversible Chess](/entries/2025/jul/irreversible_chess.md)!
 
 We could also implement a software library which can parse it, and use it

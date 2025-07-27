@@ -46,3 +46,25 @@ squares marked with an "X":
 This is particularly relevant if the enemy king has made it to your home
 rank!.. you can deliver check mate to him from across the board.
 
+
+======================================================
+
+In fact, we can use our algebra to describe how the pieces are allowed to move.
+For instance, we can write `♘ + uur♟` to describe the situation where a knight
+could take a pawn, and `. + uur♘` to describe the situation where the knight
+has taken the pawn:
+
+    Knight could take pawn:
+
+     ♟
+
+    ♘
+
+    Knight has taken pawn:
+
+     ♘
+
+    .
+
+And we can invent a new syntax to represent that move: `(♘ + uur♟) -> (. + uur♘)`
+

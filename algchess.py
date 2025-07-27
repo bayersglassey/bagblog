@@ -795,7 +795,7 @@ class RepeatRule(Rule):
         |B|
         +-+
 
-        If the rule is fired 0 or more times, these are the possible board
+        If the rule is applied 0 or more times, these are the possible board
         positions:
         >>> for b in rule.repeat()(board): print_board(b)
         +-+
