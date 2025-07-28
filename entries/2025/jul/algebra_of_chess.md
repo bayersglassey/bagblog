@@ -626,7 +626,7 @@ can we have?.. for instance, do we still have a `5A`?.. let's do some algebra:
     = A
 
 Ah ha! So really, the only things we have are 0, A, 2A, and 3A. Every other
-combination of As turns into one of those four.
+"sum of As" turns out to be one of those four things.
 In fact, to be precise, for all integers n, `nA = (n % 4)A`, where `%` is the
 "modulo" operation on integers, i.e. `n % 4` means "the remainder after
 dividing n by 4".
@@ -662,22 +662,23 @@ mathematical structures (e.g. number systems, number-like systems,
 geometries... and even games!) using algebra.
 You don't need to start with a structure and then make up an algebra to
 describe it, you can go the other way as well.
-In our case, instead of describing "board fragments" and then saying 0 was
-the empty one and `+` involved gluing them together, and describing u, d,
-l, r as sliding motions, etc, we could have just put on our mathematician
-hats and said something like:
-* let "board fragments" be a set
-* the following are board fragments: .♟♚♛♝♞♜♙♔♕♗♘♖ and 0
-* `+` is an associative operator over board fragments, with 0 as identity
-* let "movements" be a set
-* the following are movements: uldr and 1
-* concatenation of movements is an abelian group, with 1 as identity
-* concatenation distributes over `+`
-* the concatenative inverse of u is d, and of l is r
+In our case, instead of describing "board fragments", and then defining `+`
+in terms of gluing them together, and u, d, l, r in terms of sliding them
+around, we could have just put on our mathematician hats and said something
+like:
+* let "board fragments" be a set of elements closed under an associative
+  operator, `+`, with an identity element, 0 (the "empty board fragment")
+* the following are also board fragments: .♟♚♛♝♞♜♙♔♕♗♘♖
+* let "movements" be a set closed under an associative invertible operator,
+  shown by concatenation, with an identity element, 1
+* the following are also movements: uldrRFC (with u being the inverse of d,
+  l being the inverse of r, and C being its own inverse)
+* concatenation distributes over `+`, and has an abelian subgroup with kernel
+  udlr
+* (we leave out the definitions of R, F, and C for now, for brevity...)
 
 ...and already, we would be able to express any position in chess.
-For instance, as we have already seen, the initial position can be expressed
-like this:
+For instance, the initial position can be expressed like this:
 
     uuuuuuu(♜ + r(♞ + r(♝ + r(♚ + r(♛ + r(♝ + r(♞ + r♜))))))) +
      uuuuuu(♟ + r(♟ + r(♟ + r(♟ + r(♟ + r(♟ + r(♟ + r♟))))))) +
@@ -720,9 +721,9 @@ Now let's express that move with our chess algebra, using a new operator,
 `->`, which says that one board fragment can be replaced with another.
 We're going to call this a "rule":
 
-    The rule "♙ + u. can be replaced with . + u♙":
+    The rule "♙;. can be replaced with .;♙":
 
-    ♙ + u. -> . + u♙
+    ♙;. -> .;♙
 
 And now, let's do this one, where a pawn takes an enemy pawn diagonally:
 
@@ -736,7 +737,7 @@ And now, let's do this one, where a pawn takes an enemy pawn diagonally:
 
 Ready?! Ready?! Now watch this!!
 
-    ♙ + ur♟ -> . + ur♙
+    ♙;r♟ -> .;r♙
 
 Now, this operator in no way limits us to only describing *valid* chess moves.
 We can use it to describe *any* chess move, even one where you teleport your
@@ -753,22 +754,22 @@ For example, moving a king one square up, then one square right?
 
     Moving a king one square up:
 
-    ♔ + u. -> . + u♔
+    ♔;. -> .;♔
 
     Moving a king one square right:
 
-    ♔ + r. -> . + r♔
+    ♔. -> .♔
 
     Moving a king one square up and to the right (all in one move):
 
-    ♔ + ur. -> . + ur♔
+    ♔;r. -> .;r♔
 
 Let's show "doing one move, and then another" by simply putting two moves
 next to each other:
 
     Moving a king one square up, then one square right:
 
-    (♔ + u. -> . + u♔)(♔ + r. -> . + r♔)
+    (♔;. -> .;♔)(♔. -> .♔)
 
 One question we might ask is: when (if ever) can a series of moves which
 follow each other be "simplified" into a single move?..
@@ -778,13 +779,13 @@ follow each other be "simplified" into a single move?..
     one square up and to the right, all in one move.
     Is this equation actually correct, I wonder?..
 
-    (♔ + u. -> . + u♔)(♔ + r. -> . + r♔) = (♔ + ur. -> . + ur♔)
+    (♔;. -> .;♔)(♔. -> .♔) = (♔;r. -> .;r♔)
 
     Here is another equation; on the left side, it describes moving a king
     upwards, and then moving a rook upwards.
     Does this expression "simplify"?.. doesn't seem like it!..
 
-    (♔ + u. -> . + u♔)(♖ + u. -> . + u♖) = ???
+    (♔;. -> .;♔)(♖;. -> .;♖) = ???
 
 Let's focus on the example of moving the king up and then to the right.
 We showed an equation above, which claimed that moving your king up, and
@@ -794,7 +795,7 @@ Which - in standard chess, at least - is indeed the case.
 But what about moving a pawn up, and then moving a pawn up? Does it have
 to be the same pawn each time?
 
-    (♙ + u. -> . + u♙)(♙ + u. -> . + u♙) = (♙ + u. + uu. -> . + u. + uu♙)  ...???
+    (♙;. -> .;♙)(♙;. -> .;♙) = (♙;.;. -> .;.;♙)  ...???
 
 If you are lost, that's probably because **this is not a good syntax for
 visualizing the board.**
@@ -804,7 +805,7 @@ here I'll give you a nice picture of a chessboard:
     .......
     ..♙.♙..
 
-    I'm going to argue that applying the move (♙ -> . + u♙) could give us
+    I'm going to argue that applying the move (♙;. -> .;♙) could give us
     *either* of:
 
     ..♙....        ....♙..
@@ -815,14 +816,14 @@ rules, so in case you're wondering -- I'm not *proving* anything here about
 this syntax.
 I'm actually coming up with the rules for it as I go along.
 I have decided, just now, that I would like for the meaning of a move like
-`♙ + u. -> . + u♙` to be "find any one piece ♙ with an empty square above it,
+`♙;. -> .;♙` to be "find any one piece ♙ with an empty square above it,
 and move the piece onto the empty square".
 Or, another way to interpret it is, "what are all the positions which could
 result from making this move".
 
 But this means that the following equation is *not* correct:
 
-    (♙ + u. -> . + u♙)(♙ + u. -> . + u♙) = (♙ + u. + uu. -> . + u. + uu♙)
+    (♙;. -> .;♙)(♙;. -> .;♙) = (♙;.;. -> .;.;♙)
 
 ...that is, to tell someone "move some pawn up, and then move some pawn up",
 is not the same as to tell someone "move some pawn up twice".
@@ -856,12 +857,12 @@ Let's go back to this rule, which I mentioned wayyy earlier:
 
 Well, here's how we write that last rule, as a "move":
 
-    ♖ + u. -> . + u♖
+    ♖;. -> .;♖
 
 And now the question is, how do we use that rule to express (and I'm going
 to add some new syntax here, watch me now) this rule:
 
-    ♖ + u. + uu. + uuu. -> (. + u♖ + uu. + uuu.) | (. + u. + uu♖ + uuu.) | (. + u. + uu. + uuu♖)
+    ♖;.;.;. -> (.;♖;.;.) | (.;.;♖;.) | (.;.;.;♖)
 
 See what I did there? I added `|` to mean "any of".
 So like, `x -> y | z` means "the move where board fragment x becomes either
@@ -869,12 +870,12 @@ board fragment y, or board fragment z".
 
 And I would *like* to express the rook's movement as something like:
 
-    (♖ + u. -> . + u♖)(♖ + u. -> . + u♖)(♖ + u. -> . + u♖)
+    (♖;. -> .;♖)(♖;. -> .;♖)(♖;. -> .;♖)
 
 ...or better yet, forget about limiting the rook to moving forward by
 only 3 squares, what we really want is something more like:
 
-    (♖ + u. -> . + u♖)+
+    (♖;. -> .;♖)+
 
 ...where the `+` at the end means "do this movement 1 or more times".
 Programmers, wake up. Did your ears twitch just now? Did your nostrils
@@ -886,7 +887,7 @@ to the *same piece*. For instance, consider this rule:
 
     Move a rook up:
 
-    ♖ + u. -> . + u♖
+    ♖;. -> .;♖
 
 Now, let's introduce some more syntax: if M is a move, then `M{2}` means
 "do M, and then do M". In general, we can write `M{n}` for any integer n.
@@ -894,7 +895,7 @@ We can now write:
 
     Move a rook up, and then move a rook up:
 
-    (♖ + u. -> . + u♖){2}
+    (♖;. -> .;♖){2}
 
 But how do we write the rule "move a rook up, and then move the same rook
 up"?
@@ -905,7 +906,7 @@ Now, we can write:
 
     Move the POI up, and then move the POI up:
 
-    (% + u. -> . + u%){2}
+    (%;. -> .;%){2}
 
 And now let's add a way to specify that the POI is a specific piece...
 let's use e.g. "%♖: ..." to mean "choose some rook as the POI, and then...",
@@ -913,7 +914,7 @@ and "%♙" to mean "choose some pawn as the POI, and then...", etc:
 
     Move a rook up, and then move it up again:
 
-    %♖: (% + u. -> . + u%){2}
+    %♖: (%;. -> .;%){2}
 
 Make sense?.. that's all a single move.
 And this "%♖: ..." syntax isn't special; it can be stuck inside more
@@ -921,7 +922,7 @@ complicated combinations of moves, for instance:
 
     Move a single rook up twice, then move a single pawn up twice:
 
-    (%♖: (% + u. -> . + u%){2})(%♙: (% + u. -> . + u%){2})
+    (%♖: (%;. -> .;%){2})(%♙: (%;. -> .;%){2})
 
 Boom, now we're cooking with chess algebra.
 
@@ -1012,11 +1013,11 @@ We need this to define certain valid pawn moves:
 
     Pawns may move twice from their starting position:
 
-    dd# + ♙ + u. + uu. -> dd# + . + u. + uu♙
+    #;0;♙;.;. -> #;0;.;.;♙
 
     Pawns may turn into a queen upon reaching the opposite rank:
 
-    ♙ + u# -> . + u♕
+    ♙;.;# -> .;♕;#
 
 I have also added a rotation movement, R. Here is an illustration of it:
 
@@ -1045,16 +1046,16 @@ I have also added a rotation movement, R. Here is an illustration of it:
 Make sense?.. this will allow us to more easily define the movement of
 e.g. the rook:
 
-    rook_move_u = (% + u. -> . + u%)+
+    rook_move_u = (%;. -> .;%)+
 
     rook_move = %♖: (rook_move_u | R rook_move_u | R² rook_move_u | R³ rook_move_u)
 
 Also, if you are familiar with regular expressions, the following definition
 of a rook's ability to take a pawn may make some sense:
 
-    rook_move_u = (% + u. -> . + u%)+
+    rook_move_u = (%;. -> .;%)+
 
-    rook_take_u = (% + u. -> . + u%)* (% + u♟ -> . + u%)
+    rook_take_u = (%;. -> .;%)* (%;♟ -> .;%)
 
     rook_move_or_take_u = rook_move_u | rook_take_u
 
@@ -1080,7 +1081,7 @@ any enemy piece:
 
     Here is a rule which says that a pawn make take any enemy piece diagonally:
 
-    pawn_takes = (♙ + ur filled -> . + ur ♙) | (♙ + ul filled -> . + ul ♙)
+    pawn_takes = (♙;r(filled) -> .;r♙) | (♙;l(filled) -> .;l♙)
 
 We can also define rules for one player, and then use functions to easily
 "copy" those rules for the other player:
@@ -1142,14 +1143,14 @@ Now, let's consider the case of a rook moving forwards one or two squares.
     Move a rook forward if there is space, then forward again if there is
     still space.
 
-    %♖: (% + u. -> . + u%){2}
+    %♖: (%;. -> .;%){2}
 
 ...isn't this equivalent to the following rule?..
 
     Move a rook forward if there is space for that, or move it forward
     twice if there is space for that.
 
-    %♖: (% + u. -> . + u%) | (% + u. + uu. -> . + u. + uu%)
+    %♖: (%;. -> .;%) | (%;.;. -> .;.;%)
 
 ...no, I don't think they are the same... because the second rule gives
 you a choice, when there are two squares of space ahead, between moving
@@ -1159,12 +1160,12 @@ forward *again* if you can.
 
 But I believe *this* rule is equivalent to the second one above:
 
-    %♖: (% + u. -> . + u%) (% + u. -> . + u%)?
+    %♖: (%;. -> .;%) (%;. -> .;%)?
 
 ...that is, move forward if you can, and then *maybe* move forward if
 you can.
 That is, once you've moved forward once, you can then choose to behave
-like `nil` or `(% + u. -> . + u%)`.
+like `nil` or `(%;. -> .;%)`.
 
 Now, can we *prove* that these rules are equivalent?..
 What are the basic laws or axioms of rule equivalence which we can use

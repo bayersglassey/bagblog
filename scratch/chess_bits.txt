@@ -68,3 +68,11 @@ has taken the pawn:
 
 And we can invent a new syntax to represent that move: `(♘ + uur♟) -> (. + uur♘)`
 
+
+========================================
+
+...then we could add in some handy "syntax sugar":
+* let concatenation of board fragments f and g be defined as `fg = f + rg`,
+  and define an associative operator `;` as `f;g = f + ug`
+* concatenation binds more tightly than `;`, which binds more tightly than `+`
+
