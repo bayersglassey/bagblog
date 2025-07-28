@@ -550,26 +550,154 @@ It may be helpful to see an example:
             |♖|♟| |
           @ +-+-+-+
 
+As a final example, let's combine everything we've seen so far to reproduce
+the initial position of the standard chessboard:
+
+    bottom_right = 0♗♘♖;♙♙♙♙;....;....
+    bottom = dddd(bottom_right + F(bottom_right) + l♔♕)
+    full_board = bottom + RRC(bottom)
+
+Powerful stuff. Soon, we'll extend this algebra so that we can express chess
+moves in it. But first, a side note...
+
+
 ## Side note: abstract algebra, group theory, ring theory
 
-By the way, for any movement m, it's the case that `1m = m = m1`, and `m0 = 0`.
-It's also the case that every movement has an inverse movement n, such that
-`mn = 1`.
-You can write `m⁻¹` for "the inverse of m".
-Also, for any board fragment f, it's the case that `f + 0 = f`.
-Also, for any movement m, and board fragments f and g, it's the case that
-`m(f + g) = mf + mg`!..
-In abstract algebra, we would say that the movements form a "group", and so
-do the board fragments, and together, the movements and board fragments form
-a "ring". Just like addition and multiplication of numbers! Ooooh fancy.
-Also, I'll tell you a secret: we are doing algebraic geometry here, where
-"board fragments" are sets, "squares" are points (as in, the kinds of points
-which can form a line or a shape), `0` is the empty set, and `+` is set union.
+This section is going to be all about algebra itself, we won't add anything
+to our algebra of chess.
+If that bores you, feel free to skip it!
 
-**If none of this terminology sounds familiar or makes sense, don't worry about
-it. Let's get back to chess.**
+Anyway, the operators we've described so far follow certain rules...
+If the variables f, g, h are board fragments, and m, n are movements, then:
+* `f + g = g + f`
+* `f + 0 = f = 0 + f`
+* `1m = m = m1`
+* there is an inverse movement m⁻¹, such that `m(m⁻¹) = 1 = (m⁻¹)m`
+* `m(f + g) = mf + mg`
+* `mn = nm` (if m and n are both one of u, d, l, r)
 
-But you may or may not be interested in the following:
+All of these rules correspond to rules about numbers, addition, and
+multiplication.
+
+In abstract algebra, common rules are given names, for instance:
+* "associativity", e.g. `(x + y) + z = x + (y + z)`
+* "commutativity", e.g. `x + y = y + x` or `xy = yx`
+* "identity", e.g. `x + 0 = x` or `1x = x`
+* "inverse", e.g. `x + -x = 0` or `x(x⁻¹) = 1`
+* "distributivity", e.g. `x(y + z) = xy + xz`
+
+We can therefore quickly build up a new algebra using common rules.
+Furthermore, there are names for specific groups of rules, for instance:
+* a "group" is an invertible associative operator with an identity element,
+  for instance `+` and `0`, or multiplication and `1`
+* an "abelian group" is a group whose operator is commutative
+* a "ring" is two groups, one of whose operators distributes over the other,
+  for instance `+` and multiplication
+
+One more rule of groups, which is rather subtle, is that whenever two things
+exist (call them `x` and `y`), then `x + y` also exists.
+This means that you don't actually need to decide up front what all the
+things are... you don't have to say, "`+` is an operator which works on
+numbers", you can just say, "`+` is a group with an identity element we'll
+call 0, and some other element we'll call A", and immediately you know that
+`A + A` also exists, and so does `A + A + A`, and so on.
+And if you don't want to have to write `A + A + A + ...etc, 15 times`, you
+could maybe just say that `15A` means 15 As added together.
+And now, maybe A is the same as 1, in which case you have rediscovered
+numbers!.. but maybe you also say that something else exists, let's call it
+B. And so now, since A and B both exist, so does `A + B`. And so does
+`2A + 3B`. And so on...
+And if you have ever heard of "imaginary numbers", then perhaps this looks
+a bit familiar!.. because the imaginary numbers are precisely an abelian
+ring with 0 and `+` forming one group, 1 and multiplication forming the
+other, and also something called `i`.
+And since `i` exists, so does `i + i` or `2i`, and so does `i + i + i` or `3i`,
+and so does `2 + 3i`, etc etc.
+
+Now, what if we also declare that `4A = 0`?.. then how many different things
+can we have?.. for instance, do we still have a `5A`?.. let's do some algebra:
+
+    5A
+
+    = 4A + A
+
+    = 0 + A
+
+    = A
+
+Ah ha! So really, the only things we have are 0, A, 2A, and 3A. Every other
+combination of As turns into one of those four.
+In fact, to be precise, for all integers n, `nA = (n % 4)A`, where `%` is the
+"modulo" operation on integers, i.e. `n % 4` means "the remainder after
+dividing n by 4".
+
+An interesting thing about abelian groups is that they form grids.
+If you recall, an "abelian" group is one where the operator is commutative,
+meaning `x + y = y + x` for any two things x and y.
+So, let's say that besides 0, we have two things called A and B.
+By the rule of commutativity, it's therefore true that `2A + B = B + 2A`,
+and `30A + 50B = 50B + 30A`, and in general `nA + mB = mB + nA` for any
+positive integers n and m.
+Now, if we draw a diagram where A means "move up", and B means "move right",
+we get a grid:
+
+    3A  +---+--[Y]--+
+        |   |   |   |
+    2A  +---+---+---+
+        |   |   |   |
+     A  +---+---+---+
+        |   |   |   |
+     0 [X]--+---+---+
+
+        0   B  2B  3B
+
+    Starting at zero, i.e. the [X] in the bottom-left corner, moving twice
+    to the right and then 3 times upwards is the same as moving 3 times
+    upwards and then twice to the right.
+    That is, both of those movements take you to the [Y] in the top-right.
+    In other words, 2B + 3A = 3A + 2B.
+
+Why does this matter?.. because it means that you can actually create entire
+mathematical structures (e.g. number systems, number-like systems,
+geometries... and even games!) using algebra.
+You don't need to start with a structure and then make up an algebra to
+describe it, you can go the other way as well.
+In our case, instead of describing "board fragments" and then saying 0 was
+the empty one and `+` involved gluing them together, and describing u, d,
+l, r as sliding motions, etc, we could have just put on our mathematician
+hats and said something like:
+* let "board fragments" be a set
+* the following are board fragments: .♟♚♛♝♞♜♙♔♕♗♘♖ and 0
+* `+` is an associative operator over board fragments, with 0 as identity
+* let "movements" be a set
+* the following are movements: uldr and 1
+* concatenation of movements is an abelian group, with 1 as identity
+* concatenation distributes over `+`
+* the concatenative inverse of u is d, and of l is r
+
+...and already, we would be able to express any position in chess.
+For instance, as we have already seen, the initial position can be expressed
+like this:
+
+    uuuuuuu(♜ + r(♞ + r(♝ + r(♚ + r(♛ + r(♝ + r(♞ + r♜))))))) +
+     uuuuuu(♟ + r(♟ + r(♟ + r(♟ + r(♟ + r(♟ + r(♟ + r♟))))))) +
+      uuuuu(. + r(. + r(. + r(. + r(. + r(. + r(. + r.))))))) +
+       uuuu(. + r(. + r(. + r(. + r(. + r(. + r(. + r.))))))) +
+        uuu(. + r(. + r(. + r(. + r(. + r(. + r(. + r.))))))) +
+         uu(. + r(. + r(. + r(. + r(. + r(. + r(. + r.))))))) +
+          u(♙ + r(♙ + r(♙ + r(♙ + r(♙ + r(♙ + r(♙ + r♙))))))) +
+           (♖ + r(♘ + r(♗ + r(♔ + r(♕ + r(♗ + r(♘ + r♖)))))))
+
+...but the interesting thing is that we don't need to translate this into
+a chessboard! We can just leave it as an algebraic expression, and define
+all the moves of chess using algebra (as we'll see in the next section), and
+play chess with it.
+If we were to modify the rules of our algebra in various ways, we could
+come up with algebras for other games as well - checkers, othello, chess
+variants... even games with boards not based on square grids!
+
+I'll stop there on the subject of abstract algebra itself for now.
+If you're interested to learn more, you could do worse than by starting here:
 * https://en.wikipedia.org/wiki/Abstract_algebra
 * https://en.wikipedia.org/wiki/Group_theory
 * https://en.wikipedia.org/wiki/Ring_theory
