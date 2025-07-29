@@ -91,6 +91,8 @@ building upon the other:
 
 ## An algebra of chess positions
 
+### Some motivation: visualizing chess rules
+
 Here is a chess board:
 
     ♜♞♝♚♛♝♞♜
@@ -170,10 +172,16 @@ if we had a way to apply it repeatedly:
 Make sense? The rule that a rook can travel forward over as many empty squares
 as it wants, should in some sense be equivalent to repeatedly applying the
 rule that a rook can travel forward one empty square at a time.
-Keep that in mind!
 
-Now, let's gear up like proper mathematicians and start coming up with some
-syntax.
+But before we talk any further about rules, we should talk first about the
+little before & after pictures we've been using to describe them, that is,
+when we say "this can be replaced with that," what are "this" and "that"?..
+let's call them "board fragments"!
+
+
+### The concept of "board fragments"
+
+Let's gear up like proper mathematicians and start coming up with some syntax.
 We're going to come up with a way to describe fragments of chess boards as
 algebraic expressions.
 In fact, we're going to come up with an "algebra of chess positions".
@@ -241,11 +249,14 @@ piece sitting on the square.
 
 The symbol `0` will mean the empty board fragment, which consists of...
 nothing. No empty squares, no squares with pieces on them, just a "centre"
-floating in a void:
+floating in a void.
 
     The empty board fragment, "0":
 
     @
+
+
+### The concept of "movements"
 
 There are also "movements". These are ways of moving a board fragment around
 relative to its centre.
@@ -262,6 +273,9 @@ think of sliding the board relative to the centre.
 
 Given a board fragment f and movement m, we can apply m to f, resulting in
 another board fragment.
+We show application by concatenation, that is, writing things next to each
+other, e.g. `m f` or just `mf`.
+
 For instance, `u.` is the board fragment consisting of `.` slid upwards by
 one square's width relative to the centre.
 
@@ -307,6 +321,21 @@ where it ends up.
         +-+
         |♟|
     @   +-+
+
+As a shorthand, instead of `rr`, we can write `r²`, and for `rrr`, we can
+write `r³`, etc.
+And since it's difficult to type superscripts like "²" and "³", let's say
+that for any integer i, `m^i` means "do movement m, i times".
+So, `m^2 = m² = mm`, etc.
+Note that `m^1 = m`, that is, "do m once" is the same as m itself.
+What about `m^0`?.. "do m zero times"?.. that's the same as the identity
+movement, 1, which means "do nothing"!
+We can also say that `r⁻¹ = l`, and `l⁻¹ = r`.
+That is, moving to the right once is like moving to the left "negative one time".
+And similarly, `r⁻² = l²`, etc.
+
+
+### Gluing board fragments together
 
 So far, we've made board fragments consisting of a single square.
 Now we need a way to describe board fragments with multiple squares.
@@ -435,6 +464,9 @@ each other:
     ♟♟♟
     ...
     ♙♙♙
+
+
+### A few more movements: rotation, flipping, colour reversal
 
 Let's finish up our algebra of positions with operators for rotating and
 flipping the board, and reversing the colours of chess pieces.
@@ -707,6 +739,8 @@ If you're interested to learn more, you could do worse than by starting here:
 
 ## An algebra of chess moves
 
+### Introducing the arrow operator
+
 Okay! Earlier, we said that this was a valid chess move:
 
     .
@@ -797,39 +831,134 @@ to be the same pawn each time?
 
     (♙;. -> .;♙)(♙;. -> .;♙) = (♙;.;. -> .;.;♙)  ...???
 
-If you are lost, that's probably because **this is not a good syntax for
-visualizing the board.**
-So don't feel lost, don't run away from me please, stay, yes stay with me,
-here I'll give you a nice picture of a chessboard:
+Let's pause for a moment and try to define "rules" more precisely.
+I would like for the meaning of a rule like `♙;. -> .;♙` to be something
+like "find any one piece ♙ with an empty square above it, and move the piece
+onto the empty square".
+But since there might be many pieces ♙ with empty squares above them, there
+could be many possible positions resulting from this rule.
+So, the way we will be interpreting rules is, "what are all the positions
+which could result from making this move".
 
-    .......
-    ..♙.♙..
+A bit more formally, let us say: a rule is something which can be applied to
+a board fragment, and produces a set of board fragments.
+A "set"!.. let's pause for another moment, and talk about set theory.
 
-    I'm going to argue that applying the move (♙;. -> .;♙) could give us
-    *either* of:
 
-    ..♙....        ....♙..
-    ....♙..   or   ..♙....
+### Side note: set theory
 
-Now, I've been jumping ahead like crazy here with this syntax and these
-rules, so in case you're wondering -- I'm not *proving* anything here about
-this syntax.
-I'm actually coming up with the rules for it as I go along.
-I have decided, just now, that I would like for the meaning of a move like
-`♙;. -> .;♙` to be "find any one piece ♙ with an empty square above it,
-and move the piece onto the empty square".
-Or, another way to interpret it is, "what are all the positions which could
-result from making this move".
+I suppose you don't *really* need to read this section, but it might be
+handy for understanding the concept of a "set of board fragments".
 
-But this means that the following equation is *not* correct:
+Set theory is a branch of mathematics focusing on "sets", in the sense of
+"collections of things".
+For instance, if you have a set of numbers, perhaps it consists of the
+numbers 1 and 2. Or perhaps it consists of all the even numbers.
+Already, you can see that a set can be finite, or infinite.
+The defining characteristic of a set is that, given anything, you can say
+whether that thing is in the set or not.
+For instance, 20 is in the set of even numbers, but 21 is not.
 
-    (♙;. -> .;♙)(♙;. -> .;♙) = (♙;.;. -> .;.;♙)
+The usual syntax for sets uses curly brackets, for instance `{1, 2, 3}`
+is the set consisting of 1, 2, and 3.
+There is exactly one empty set, `{}`, which also has its own symbol, `∅`.
 
-...that is, to tell someone "move some pawn up, and then move some pawn up",
-is not the same as to tell someone "move some pawn up twice".
+Importantly, sets don't need to contain just numbers.
+For instance, you can have a set containing other sets: `{∅}` is the set
+containing just the empty set, `{∅, {∅}}` is the set containing just the
+empty set and the set containing just the empty set, etc.
 
-Let's ponder that for a moment... just savour the idea for a second...
-Okay, now I'm going to jump around again.
+Set theory is interesting, because it has become the underpinning of almost
+all of modern mathematics.
+Almost every other branch of mathematics can be, and generally is, expressed
+with it.
+
+I'll stop there for now, but if you want to know more, you might try starting
+here:
+* https://en.wikipedia.org/wiki/Set_theory
+* https://en.wikipedia.org/wiki/Foundations_of_mathematics
+
+
+### The concept of "rules"
+
+In any case, we were going to try to define "rules", before we got
+sidetracked by set theory.
+So, again, let's say a rule is something which can be applied to a board
+fragment, and produces a *set* of board fragments.
+
+(If we wish to use mathematical jargon, we may say "a rule is a function
+from board fragments to sets of board fragments".)
+
+What syntax shall we use for sets of board fragments?..
+We could use the usual syntax for sets, with curly brackets `{...}`, but it
+doesn't work very well with our chess algebra syntax.
+For instance, here's a set of three board fragments: `{♙;., ♘..;..♚, 0}`.
+I find that... not so readable. So let's use a new operator instead, `|`.
+The meaning of `♙;. | ♘..;..♚ | 0` is the set consisting of those 3 board
+fragments.
+(If you read the "side note" earlier about abstract algebra, then you may
+believe me if I tell you that `|` is an associative commutative operator
+with identity element `∅`...)
+
+How do we express a set with exactly one member?.. so for instance, is
+`♙;.` a board fragment, or the set containing just that board fragment?..
+In fact, I'm going to abuse our syntax a bit, and say that our operators
+all accept board fragments *or* sets of board fragments.
+To "abuse syntax" means, in the mathematical biz, to use the same syntax
+for two different things, with the understanding that it will be obvious
+what is meant in context.
+In order for this abuse of syntax to work out nicely in our case, our
+operators will all distribute over `|`, for instance `u(f | g) = uf | ug`,
+`.(♙|♟). = .♙. | .♟.`, `(f -> g)(h | i) = (f -> g)h | (f -> g)i`, etc.
+If a situation comes up where I need to make the distinction explicit, I'll
+say e.g. "the set ♙;." or "the board fragment ♙;.".
+
+If you are feeling lost, I apologize, and here is a picture describing the
+meaning of "rules" in our chess algebra!
+
+    Applying this rule ("a pawn can move forward into an empty square"):
+
+    .        ♙
+    ♙   ->   .
+
+    ...to this board fragment (two pawns, with empty squares in front of them):
+
+    ...
+    ♙.♙
+
+    ...produces this set of board fragments (one pawn could move forward, or
+    the other could move forward):
+
+    ♙..         ..♙
+    ..♙   and   ♙..
+
+...and we can express that example in chess algebra as:
+
+    (♙;. -> .;♙)(♙.♙;...) = (..♙;♙..) | (♙..;..♙)
+
+Make sense?.. here is another example:
+
+    Applying this rule ("a pawn can move forward into an empty square"):
+
+    .        ♙
+    ♙   ->   .
+
+    ...to this board fragment (two pawns, blocked by enemy pawns):
+
+    ♟.♟
+    ♙.♙
+
+    ...produces the empty set!
+    That is, neither pawn is able to move forwards.
+
+...and we can express that example in chess algebra as:
+
+    (♙;. -> .;♙)(♙.♙;♟.♟) = ∅
+
+...isn't that fantastic?!
+
+
+## Combining rules
 
 Let's go back to this rule, which I mentioned wayyy earlier:
 
@@ -855,196 +984,187 @@ Let's go back to this rule, which I mentioned wayyy earlier:
     ♖
     .
 
-Well, here's how we write that last rule, as a "move":
+Well, here's how we write that last rule:
 
     ♖;. -> .;♖
 
-And now the question is, how do we use that rule to express (and I'm going
-to add some new syntax here, watch me now) this rule:
+And now the question is, how do we use that rule to express:
 
-    ♖;.;.;. -> (.;♖;.;.) | (.;.;♖;.) | (.;.;.;♖)
+    ♖;.;.;. -> .;♖;.;. | .;.;♖;. | .;.;.;♖
 
-See what I did there? I added `|` to mean "any of".
-So like, `x -> y | z` means "the move where board fragment x becomes either
-board fragment y, or board fragment z".
+Well, if `♖;. -> .;♖` is a rook moving one square up, then I would like for
+something like `(♖;. -> .;♖)(♖;. -> .;♖)` to mean a rook moving two squares
+up.
+So, let's say concatenation of rules is an operator, whose meaning is "and
+then":
 
-And I would *like* to express the rook's movement as something like:
+    Move a rook one square up, and then move a rook one square up:
+
+    (♖;. -> .;♖)(♖;. -> .;♖)
+
+    Move a rook one square up, and then move a rook one square up, and then
+    move a rook one square up:
 
     (♖;. -> .;♖)(♖;. -> .;♖)(♖;. -> .;♖)
 
-...or better yet, forget about limiting the rook to moving forward by
-only 3 squares, what we really want is something more like:
+...that's going to get tedious... let's use "²", "³", "^i", etc to indicate
+the number of times a rule should be repeated. So:
+
+    Move a rook one square up, and then move a rook one square up:
+
+    (♖;. -> .;♖)²
+
+    Move a rook one square up, and then move a rook one square up, and then
+    move a rook one square up:
+
+    (♖;. -> .;♖)³
+
+But what about a rook moving one square up, and then *optionally* moving
+another square up?.. let's use `?` as a suffix meaning "optionally":
+
+    Move a rook up, and then optionally move a rook up:
+
+    (♖;. -> .;♖)(♖;. -> .;♖)?
+
+    Move a rook up, and then optionally move a rook up, and then optionally
+    move a rook up:
+
+    (♖;. -> .;♖)(♖;. -> .;♖)?(♖;. -> .;♖)?
+
+...but what if we want to support chessboards of unlimited size?.. can we
+introduce a symbol meaning "one or more times"?.. sure, let's use `+` as a
+suffix for that:
+
+    Move a rook up, and then optionally move a rook up, and then optionally
+    move a rook up, and then... etc, forever:
 
     (♖;. -> .;♖)+
 
-...where the `+` at the end means "do this movement 1 or more times".
 Programmers, wake up. Did your ears twitch just now? Did your nostrils
 widen, and did you think to yourself "smells like regular expressions"?
-Yessss. Yesssss, that is exactly where we're going with this.
+Yes. Yesssss, that is exactly where we're going with this.
 
-But let's go back again to the question of how to apply a rule repeatedly
-to the *same piece*. For instance, consider this rule:
+If you've never heard of a "regular expression", you could do worse than to
+begin here:
+* https://en.wikipedia.org/wiki/Regular_expression
 
-    Move a rook up:
+In any case, I'm going to steal some syntax from regular expressions, and
+lay it out for you here:
 
-    ♖;. -> .;♖
+    The syntax of repeated rules!
 
-Now, let's introduce some more syntax: if M is a move, then `M{2}` means
-"do M, and then do M". In general, we can write `M{n}` for any integer n.
-We can now write:
+    Finite repetition:
 
-    Move a rook up, and then move a rook up:
+    R^2 = R² = RR
 
-    (♖;. -> .;♖){2}
+    ...and in general, for any positive integer i,
+    R^i = "R repeated i times"
 
-But how do we write the rule "move a rook up, and then move the same rook
-up"?
+    Finite optional repetition:
+
+    R{2, 4} = RR | RRR | RRRR = "R repeated between 2 and 4 times"
+
+    ...and in general, for any positive integers i and j,
+    R{i, j} = "R repeated between i and j times"
+
+    Infinite optional repetition:
+
+    R{2, ∞} = RR | RRR | RRRR | RRRRR | ... = "R repeated at least 2 times"
+
+    ...and in general, for any positive integer i,
+    R{i, ∞} = "R repeated at least i times"
+
+    And finally, some handy shorthands:
+
+    R? = R{0, 1}
+    R* = R{0, ∞}
+    R+ = R{1, ∞}
+
+Alrighty! Now are we done? Can we describe rook movement like this?
+
+    Move a rook up, one or more times:
+
+    (♖;. -> .;♖)+
+
+Not quite! Because there's nothing yet to guarantee that we are moving the
+*same* rook up each time.
+Consider:
+
+    If we apply this rule (move a rook up, then move a rook up):
+
+    (♖;. -> .;♖)(♖;. -> .;♖)
+
+    ...to this board fragment:
+
+    ...
+    ...
+    ♖.♖
+
+    ...then these are the possible resulting board fragments:
+
+    ♖..         ...         ..♖
+    ...   and   ♖.♖   and   ...
+    ..♖         ...         ♖..
+
+...right?! Because these are the possible series of moves:
+* move left rook, move left rook
+* move left rook, move right rook
+* move right rook, move left rook
+* move right rook, move right rook
+
+...and the middle two of those series produce the same board fragment in the
+end (the one with both rooks on the same horizontal rank).
+So, 3 possible resulting board fragments.
+
+So, how do we specify that multiple rules apply to "the same piece"?..
+
+
+### Pieces of interest
+
 Let's introduce the idea of a "piece of interest" (POI for short).
-Idunno if that'll do quite what we want, but let's see.
-Let's use the symbol `%` to represent the POI.
+We'll use the symbol `%` to represent the POI; and so, `%` becomes a board
+fragment, just like `.` or `♙`.
 Now, we can write:
 
     Move the POI up, and then move the POI up:
 
-    (%;. -> .;%){2}
+    (%;. -> .;%)²
 
-And now let's add a way to specify that the POI is a specific piece...
-let's use e.g. "%♖: ..." to mean "choose some rook as the POI, and then...",
-and "%♙" to mean "choose some pawn as the POI, and then...", etc:
+Ah ha! Now let's add a way to specify, or choose, the POI.
+Here, then, is some new syntax: "%♖: ..." will mean "choose some rook as
+the POI, and then...".
+In general, if p is a piece, and R is a rule, then `%p: R` is a rule.
 
-    Move a rook up, and then move it up again:
+Now, can we finally move a rook two squares up?.. yes we can!
 
-    %♖: (%;. -> .;%){2}
+    Pick a rook, move it up, then move it up again:
 
-Make sense?.. that's all a single move.
+    %♖: (%;. -> .;%)²
+
+Make sense?..
 And this "%♖: ..." syntax isn't special; it can be stuck inside more
 complicated combinations of moves, for instance:
 
     Move a single rook up twice, then move a single pawn up twice:
 
-    (%♖: (%;. -> .;%){2})(%♙: (%;. -> .;%){2})
+    (%♖: (%;. -> .;%)²)(%♙: (%;. -> .;%)²)
+
+And now. Finally. Can we describe how a rook moves?..
+
+    Pick a rook, and move it up one or more times:
+
+    %♖: (%;. -> .;%)+
 
 Boom, now we're cooking with chess algebra.
 
 
-## Chess algebra made rigorous
+### Reusing rules in multiple directions
 
-Let's take a little pause, stop adding new syntax, and just describe what
-we've come up with so far. Explicitly this time, not just by piling up
-example upon example.
-
-    A basic movement is one of: 1 u d l r R
-        * the meaning of R is a counter-clockwise rotation of 90 degrees
-    A movement is one of:
-        * a basic movement
-        * nm (where n, m are movements)
-            * Note that 1m = m = m1
-            * If n and m do not contain any rotations R, then nm = mn
-        * n⁻¹, n², or in general n^i, where n is a movement and i is an integer
-            * The meaning of n⁻¹ is the inverse of n, such that nn⁻¹ = 1.
-            * The meaning of n² is nn, n³ is nnn, n^4 is nnnn, etc.
-                * Note that R^4 = 1, i.e. 4 90 degree rotations are equivalent
-                  to no movement at all.
-
-    A chess piece is one of: ♙ ♔ ♕ ♗ ♘ ♖ ♟ ♚ ♛ ♝ ♞ ♜
-    A basic board fragment either a chess piece, or one of: 0 . % #
-    A board fragment is one of:
-        * a basic board fragment
-        * mf (where m is a movement, and f is a board fragment)
-        * f + g (where f and g are board fragments)
-            * Note that f + g = g + f, and 0 + f = f = f + 0
-            * Note also that m(f + g) = mf + mg, for any movement m
-
-    A board fragment pattern is one of:
-        * a board fragment
-        * f | g (where f and g are board fragment patterns)
-            * The meaning is, either f or g
-    A move is one of:
-        * nil
-            * The meaning is: the empty move, i.e. the move which consists
-              of doing nothing, leaving the board exactly as it was
-        * f -> g (where f and g are board fragment patterns)
-        * %p: M (where p is a chess piece and M is a move)
-            * The meaning is: choose a specific piece on the board.
-              It is now the POI (piece of interest).
-              Now do M.
-        * MN (where M and N are moves)
-            * The meaning is, do M and then do N.
-            * Note that nil M = M = M nil, that is, "doing nothing and
-              then doing M" is the same as simply doing M, and so is
-              "doing M and then doing nothing".
-        * M | N (where M and N are moves)
-            * The meaning is "do either M or N"
-            * Note: I belieeeeve that f -> (g | h) is probably equivalent
-              to (f -> g) | (f -> h) ...but the proof is left as an
-              excercise to the reader ;)
-        * M{i} (where M is a move and i is an integer)
-            * The meaning is "do M i times", e.g. M{3} = MMM
-                * Note that M{0} = nil
-        * M{i, j} (where M is a move and i and j are integers)
-            * The meaning is "do M between i and j times"
-              e.g. M{2, 4} = M{2} | M{3} | M{4} = MM | MMM | MMMM
-        * M*
-            * The meaning is "do M zero or more times"
-              i.e. M* = nil | M | MM | MMM | MMMM | ...
-        * M+
-            * The meaning is "do M one or more times"
-              i.e. M+ = M | MM | MMM | MMMM | ...
-                * Note that M* = nil | M+
-        * M?
-            * The meaning is "maybe do M", i.e. M? = nil | M
-                * Note that M? = M{0, 1}
-
-Didja memorize all that?!?!?!
-
-Don't worry, if it makes your eyes glaze over, you're free to ignore it.
-But the fact that I was able to write it down makes me more confident that
-our algebra is self-consistent, and we're not just waving our hands around
-saying crazy things.
-For instance, I reckon we could likely implement this algebra in software...
-hint hint...
-
-By the way, I snuck in some new concepts! Did you notice?
-
-For instance, there is now a board fragment `#`, which means "off the board".
-That is, whereas `.` means a square of the board, onto which a piece could be
-placed, `#` means somewhere off the board, where a piece cannot be placed.
-We need this to define certain valid pawn moves:
-
-    Pawns may move twice from their starting position:
-
-    #;0;♙;.;. -> #;0;.;.;♙
-
-    Pawns may turn into a queen upon reaching the opposite rank:
-
-    ♙;.;# -> .;♕;#
-
-I have also added a rotation movement, R. Here is an illustration of it:
-
-    The board fragment "r♟" (recall, @ is the board fragment's centre):
-
-          +-+
-          |♟|
-        @ +-+
-
-    The board fragment "Ru♟", i.e. "u♟ rotated around the centre by 90
-    degrees counter-clockwise":
-
-      +-+
-      |♟|
-      +-+
-
-        @
-
-    The board fragment "R²u♟", i.e. "u♟ rotated around the centre by 180
-    degrees counter-clockwise":
-
-    +-+ @
-    |♟|
-    +-+
-
-Make sense?.. this will allow us to more easily define the movement of
-e.g. the rook:
+Several chess pieces (rook, bishop, knight, king, queen) have movement rules
+which we could define in one direction, then rotate 4 times to get the
+complete movement rule.
+We can make use of the rotation operator, `R`, to achieve this.
+Let's continue with our example of the rook:
 
     rook_move_u = (%;. -> .;%)+
 
@@ -1070,49 +1190,75 @@ the 4 cardinal directions...
 
     rook_move_or_take = %♖: in_any_direction(rook_move_or_take_u)
 
-We can also express more complicated things, like defining rules for taking
-any enemy piece:
+Also, you may have noticed that according to our definition above, rooks can
+only take enemy pawns.
+How can we easily extend that to all enemy pieces?..
 
-    Here are some board fragment patterns:
+    enemy_pieces = ♟ | ♚ | ♛ | ♝ | ♞ | ♜
 
-    unfilled = ♙ | ♔ | ♕ | ♗ | ♘ | ♖
+    rook_take_u = (%;. -> .;%)* (%;(enemy_pieces) -> .;%)
 
-    filled = ♟ | ♚ | ♛ | ♝ | ♞ | ♜
+...notice how we've replaced "♟" with "enemy_pieces" in the rule "rook_take_u".
+And, since we said that all our operators distribute over `|`, this means that:
 
-    Here is a rule which says that a pawn make take any enemy piece diagonally:
+    rook_take_u = (%;. -> .;%)* (%;(enemy_pieces) -> .;%)
 
-    pawn_takes = (♙;r(filled) -> .;r♙) | (♙;l(filled) -> .;l♙)
+                = (%;. -> .;%)* (%;(♟|♚|♛|♝|♞|♜) -> .;%)
 
-We can also define rules for one player, and then use functions to easily
-"copy" those rules for the other player:
+                = (%;. -> .;%)* (
+                    (%;♟ -> .;%) |
+                    (%;♚ -> .;%) |
+                    (%;♛ -> .;%) |
+                    (%;♝ -> .;%) |
+                    (%;♞ -> .;%) |
+                    (%;♜ -> .;%)
+                  )
 
-    Here is a function which converts a board fragment pattern or move
-    into one in which the "colours" of all pieces have been swapped:
+...do you believe me?
 
-    colour_swapped(♙) = ♟
-    colour_swapped(♔) = ♚
-    ...etc...
-    colour_swapped(f + g) = colour_swapped(f) + colour_swapped(g)
-    colour_swapped(f | g) = colour_swapped(f) | colour_swapped(g)
-    colour_swapped(mf) = m colour_swapped(f)
-    ...etc...
 
-    And here is a function which converts a board fragment pattern or move
-    into one in which the board has been "flipped" - the colours of all pieces
-    have been swapped, and the board has been rotated 180 degrees:
+## Extending chess algebra
 
-    flipped(f) = R² colour_swapped(f)
-    flipped(f -> g) = flipped(f) -> flipped(g)
-    flipped(M N) = flipped(M) flipped(N)
-    ...etc...
+So far, we've seen how to describe simple piece movements.
+But what about castling?.. what about pawn promotion?.. what about pawns
+being allowed to move two squares on their first move?.. what about "en
+passant"?..
+We can describe all of this, and more.
 
-Are you with me so far?.. yes?.. no?..
+For instance, let's introduce a board fragment `#`, which means "off the board".
+That is, whereas `.` means a square of the board, onto which a piece could be
+placed, `#` means somewhere off the board, where a piece cannot be placed.
+Now we can define some of the stranger pawn behaviour:
 
-Look, even if you don't fully follow everything here, I hope you can at
-least believe me that we have found a way to express chess positions and moves
-using algebra.
+    Pawns may move twice from their starting position:
 
-Isn't that cool?
+    #;0;♙;.;. -> #;0;.;.;♙
+
+    Pawns may turn into a queen upon reaching the opposite rank:
+
+    ♙;.;# -> .;♕;#
+
+What about castling?.. we can describe the basic "swapping king with rook"
+move easily enough:
+
+    (#♖..♔ -> #.♔♖.) | (♔...♖# -> .♖♔..#)
+
+...but what about the condition that the king not be in, or pass through,
+check?..
+For that, we need to be able to detect check; and we need to be able to
+express a rule which only applies when some condition is met.
+Let's introduce some syntax!
+If A is a condition (something which can be true or false) and B and C
+are rules, then let's say `if A then B else C` is a rule.
+And as a shorthand let's have C default to ∅, that is,
+`(if A then B) = (if A then B else ∅)`.
+
+So now, what are conditions?
+Actually, we've already seen some... in rules of the form `f -> g`, we're
+using the board fragment f as a sort of condition.
+But it's a bit more complicated than that...
+
+TODO: introduce "matching", "finding", and "replacing"?..
 
 
 ## What can we do with it?
@@ -1128,48 +1274,6 @@ We could also implement a software library which can parse it, and use it
 to quickly play different chess variants!
 That sounds fun. Maybe we'll do that and
 [link to it here](algchess.py)...
-
-
-## Appendix A: when do two moves simplify into one?
-
-For any move M, it is the case that `nil M = M = M nil`.
-That is, "do nothing and then do M" is the same as "do M", and the same as
-"do M and then do nothing".
-By two moves being "the same", I mean that they always apply to the same
-board fragments, and transform them into the same board fragments.
-
-Now, let's consider the case of a rook moving forwards one or two squares.
-
-    Move a rook forward if there is space, then forward again if there is
-    still space.
-
-    %♖: (%;. -> .;%){2}
-
-...isn't this equivalent to the following rule?..
-
-    Move a rook forward if there is space for that, or move it forward
-    twice if there is space for that.
-
-    %♖: (%;. -> .;%) | (%;.;. -> .;.;%)
-
-...no, I don't think they are the same... because the second rule gives
-you a choice, when there are two squares of space ahead, between moving
-one or two squares forward.
-Whereas the first rule says, move forward if you can, and then move
-forward *again* if you can.
-
-But I believe *this* rule is equivalent to the second one above:
-
-    %♖: (%;. -> .;%) (%;. -> .;%)?
-
-...that is, move forward if you can, and then *maybe* move forward if
-you can.
-That is, once you've moved forward once, you can then choose to behave
-like `nil` or `(%;. -> .;%)`.
-
-Now, can we *prove* that these rules are equivalent?..
-What are the basic laws or axioms of rule equivalence which we can use
-to prove such theorems?..
 
 
 ================================================================

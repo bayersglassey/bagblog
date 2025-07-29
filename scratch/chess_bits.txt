@@ -76,3 +76,174 @@ And we can invent a new syntax to represent that move: `(♘ + uur♟) -> (. + u
   and define an associative operator `;` as `f;g = f + ug`
 * concatenation binds more tightly than `;`, which binds more tightly than `+`
 
+===========================================
+
+## Chess algebra made rigorous
+
+Let's take a little pause, stop adding new syntax, and just describe what
+we've come up with so far. Explicitly this time, not just by piling up
+example upon example.
+
+    A basic movement is one of: 1 u d l r R
+        * the meaning of R is a counter-clockwise rotation of 90 degrees
+    A movement is one of:
+        * a basic movement
+        * nm (where n, m are movements)
+            * Note that 1m = m = m1
+            * If n and m do not contain any rotations R, then nm = mn
+        * n⁻¹, n², or in general n^i, where n is a movement and i is an integer
+            * The meaning of n⁻¹ is the inverse of n, such that nn⁻¹ = 1.
+            * The meaning of n² is nn, n³ is nnn, n^4 is nnnn, etc.
+                * Note that R^4 = 1, i.e. 4 90 degree rotations are equivalent
+                  to no movement at all.
+
+    A chess piece is one of: ♙ ♔ ♕ ♗ ♘ ♖ ♟ ♚ ♛ ♝ ♞ ♜
+    A basic board fragment either a chess piece, or one of: 0 . % #
+    A board fragment is one of:
+        * a basic board fragment
+        * mf (where m is a movement, and f is a board fragment)
+        * f + g (where f and g are board fragments)
+            * Note that f + g = g + f, and 0 + f = f = f + 0
+            * Note also that m(f + g) = mf + mg, for any movement m
+
+    A board fragment pattern is one of:
+        * a board fragment
+        * f | g (where f and g are board fragment patterns)
+            * The meaning is, either f or g
+    A move is one of:
+        * nil
+            * The meaning is: the empty move, i.e. the move which consists
+              of doing nothing, leaving the board exactly as it was
+        * f -> g (where f and g are board fragment patterns)
+        * %p: M (where p is a chess piece and M is a move)
+            * The meaning is: choose a specific piece on the board.
+              It is now the POI (piece of interest).
+              Now do M.
+        * MN (where M and N are moves)
+            * The meaning is, do M and then do N.
+            * Note that nil M = M = M nil, that is, "doing nothing and
+              then doing M" is the same as simply doing M, and so is
+              "doing M and then doing nothing".
+        * M | N (where M and N are moves)
+            * The meaning is "do either M or N"
+            * Note: I belieeeeve that f -> (g | h) is probably equivalent
+              to (f -> g) | (f -> h) ...but the proof is left as an
+              excercise to the reader ;)
+        * M{i} (where M is a move and i is an integer)
+            * The meaning is "do M i times", e.g. M{3} = MMM
+                * Note that M{0} = nil
+        * M{i, j} (where M is a move and i and j are integers)
+            * The meaning is "do M between i and j times"
+              e.g. M{2, 4} = M{2} | M{3} | M{4} = MM | MMM | MMMM
+        * M*
+            * The meaning is "do M zero or more times"
+              i.e. M* = nil | M | MM | MMM | MMMM | ...
+        * M+
+            * The meaning is "do M one or more times"
+              i.e. M+ = M | MM | MMM | MMMM | ...
+                * Note that M* = nil | M+
+        * M?
+            * The meaning is "maybe do M", i.e. M? = nil | M
+                * Note that M? = M{0, 1}
+
+================================================
+
+## Appendix A: when do two moves simplify into one?
+
+For any move M, it is the case that `nil M = M = M nil`.
+That is, "do nothing and then do M" is the same as "do M", and the same as
+"do M and then do nothing".
+By two moves being "the same", I mean that they always apply to the same
+board fragments, and transform them into the same board fragments.
+
+Now, let's consider the case of a rook moving forwards one or two squares.
+
+    Move a rook forward if there is space, then forward again if there is
+    still space.
+
+    %♖: (%;. -> .;%){2}
+
+...isn't this equivalent to the following rule?..
+
+    Move a rook forward if there is space for that, or move it forward
+    twice if there is space for that.
+
+    %♖: (%;. -> .;%) | (%;.;. -> .;.;%)
+
+...no, I don't think they are the same... because the second rule gives
+you a choice, when there are two squares of space ahead, between moving
+one or two squares forward.
+Whereas the first rule says, move forward if you can, and then move
+forward *again* if you can.
+
+But I believe *this* rule is equivalent to the second one above:
+
+    %♖: (%;. -> .;%) (%;. -> .;%)?
+
+...that is, move forward if you can, and then *maybe* move forward if
+you can.
+That is, once you've moved forward once, you can then choose to behave
+like `nil` or `(%;. -> .;%)`.
+
+Now, can we *prove* that these rules are equivalent?..
+What are the basic laws or axioms of rule equivalence which we can use
+to prove such theorems?..
+
+
+=======================================
+
+We can also express more complicated things, like defining rules for taking
+any enemy piece:
+
+    Here are some board fragment patterns:
+
+    unfilled = ♙ | ♔ | ♕ | ♗ | ♘ | ♖
+
+    filled = ♟ | ♚ | ♛ | ♝ | ♞ | ♜
+
+    Here is a rule which says that a pawn make take any enemy piece diagonally:
+
+    pawn_takes = (♙;r(filled) -> .;r♙) | (♙;l(filled) -> .;l♙)
+
+We can also define rules for one player, and then use functions to easily
+"copy" those rules for the other player:
+
+    Here is a function which converts a board fragment pattern or move
+    into one in which the "colours" of all pieces have been swapped:
+
+    colour_swapped(♙) = ♟
+    colour_swapped(♔) = ♚
+    ...etc...
+    colour_swapped(f + g) = colour_swapped(f) + colour_swapped(g)
+    colour_swapped(f | g) = colour_swapped(f) | colour_swapped(g)
+    colour_swapped(mf) = m colour_swapped(f)
+    ...etc...
+
+    And here is a function which converts a board fragment pattern or move
+    into one in which the board has been "flipped" - the colours of all pieces
+    have been swapped, and the board has been rotated 180 degrees:
+
+    flipped(f) = R² colour_swapped(f)
+    flipped(f -> g) = flipped(f) -> flipped(g)
+    flipped(M N) = flipped(M) flipped(N)
+    ...etc...
+
+===================
+
+The set of all even numbers could be written something like
+`{x ∈ ℤ: x % 2 == 0}`.
+The symbol `ℤ` means the set of all integers, and the symbol `∈` means "is
+in".
+So, `{x ∈ ℤ: x % 2 == 0}` is "the set of all integers x such such that x
+modulo 2 is 0", that is, the set of even numbers. 
+And this set, the set of even numbers, is a subset of ℤ, the integers.
+Naturally, there is a symbol for "subset of": `⊂`.
+So we can say `{x ∈ ℤ: x % 2 == 0} ⊂ ℤ`.
+
+There are also some key set operations: intersection, `∩`, and union, `∪`.
+The intersection of two sets is the set which contains only those things
+which are in *both* of the original sets; and the union of two sets is the set
+containing only those things which are in *either* of the original sets.
+For instance, `{1, 2} ∩ {2, 3} = {2}`, and `{1, 2} ∪ {2, 3} = {1, 2, 3}`.
+For any set S, `S ∩ ∅ = ∅`, and `S ∪ ∅ = S`.
+
