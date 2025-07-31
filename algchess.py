@@ -16,6 +16,8 @@ Let's define the basic pawn move, forward to an empty square:
     ... ])
 
     >>> pawn_move_rule = FindAndReplaceRule(pawn_move_search, pawn_move_replace)
+    >>> print(pawn_move_rule)
+    p;. -> .;p
 
 Now let's see, on an example board fragment, all possible pawn moves:
 
@@ -115,6 +117,8 @@ Now let's give pawns the ability to take kings diagonally...
     >>> pawn_take_left_rule = FindAndReplaceRule(pawn_take_left_search, pawn_take_left_replace)
 
     >>> pawn_rule = OneOfRule([pawn_move_rule, pawn_take_right_rule, pawn_take_left_rule])
+    >>> print(pawn_rule)
+    (p;. -> .;p) | (p;rK -> .;rp) | (rp;K -> r.;p)
 
 Now that pawns can either move forward or take kings diagonally, what are
 all the valid moves from this position?..
@@ -179,6 +183,8 @@ as '%'.
 
     A rule which says we can move any given pawn forwards twice.
     >>> pawn_move_twice_rule = PieceOfInterestRule('p', move_once_rule ** 2)
+    >>> print(pawn_move_twice_rule)
+    %p: (%;. -> .;%)(%;. -> .;%)
 
     >>> board = parse_board([
     ...     '..K.',
@@ -209,9 +215,11 @@ as '%'.
 
 How about rooks' ability to move forwards *one or more* times, until they hit
 an obstacle?..
-For this, we will use Rule.repeat(1), which means repeat from 1 to infinity.
+For this, we will use Rule.one_or_more(), which means repeat from 1 to infinity.
 
-    >>> rook_move_rule = PieceOfInterestRule('R', move_once_rule.repeat(1))
+    >>> rook_move_rule = PieceOfInterestRule('R', move_once_rule.one_or_more())
+    >>> print(rook_move_rule)
+    %R: (%;. -> .;%)+
 
     >>> board = parse_board([
     ...     '....',
@@ -247,8 +255,11 @@ For this, we will use Rule.repeat(1), which means repeat from 1 to infinity.
     +----+
 
 """
-
+import re
 from typing import List, Dict, Tuple, Iterable, Optional, Union, FrozenSet
+
+
+RULE_TOKEN_REGEX = re.compile(r'[()|*+]|%.:|->|{.*}|[^(){}|*+:\->]+')
 
 
 Location = Tuple[int, int]
@@ -299,7 +310,7 @@ def unique_boards(boards: Iterable[Board]) -> List[Board]:
     return list(found.values())
 
 
-def parse_board(lines, x0=0, y0=0) -> Board:
+def parse_board(lines_or_text, x0=0, y0=0) -> Board:
     """Parses a board from the given text (or lines of text)
 
         >>> f = parse_board([
@@ -312,22 +323,90 @@ def parse_board(lines, x0=0, y0=0) -> Board:
         (11, 20): '.'
         (12, 20): '.'
 
+        >>> f = parse_board('P..;rK', 10, 20)
+        >>> for k, v in f.items(): print(f'{k!r}: {v!r}')
+        (10, 20): 'P'
+        (11, 20): '.'
+        (12, 20): '.'
+        (11, 21): 'K'
+
+        >>> f = parse_board('0.0; .0.; 0.0', 10, 20)
+        >>> for k, v in f.items(): print(f'{k!r}: {v!r}')
+        (11, 20): '.'
+        (10, 21): '.'
+        (12, 21): '.'
+        (11, 22): '.'
+
     """
     f = {}
-    if isinstance(lines, str):
-        lines = lines.splitlines()
-    h = len(lines)
-    for _y, line in enumerate(lines):
-        for x, c in enumerate(line):
-            if c == ' ':
+    if isinstance(lines_or_text, str):
+        text = lines_or_text
+        x = x0
+        y = y0
+        for c in text:
+            if c in (' ', '1'):
                 continue
-            y = h - _y - 1
-            f[(x0 + x, y0 + y)] = c
+            elif c == ';':
+                x = x0
+                y += 1
+            elif c == 'u':
+                y += 1
+            elif c == 'd':
+                y -= 1
+            elif c == 'l':
+                x -= 1
+            elif c == 'r':
+                x += 1
+            elif c == '0':
+                x += 1
+            else:
+                f[(x, y)] = c
+                x += 1
+    else:
+        lines = lines_or_text
+        h = len(lines)
+        for _y, line in enumerate(lines):
+            for x, c in enumerate(line):
+                if c == ' ':
+                    continue
+                y = h - _y - 1
+                f[(x0 + x, y0 + y)] = c
     return f
 
 
+def board_repr(f: Board) -> str:
+    """Returns a string representation of a board, suitable for use with
+    parse_board
+
+        >>> board_repr({
+        ...     (0, 0): 'P',
+        ...     (1, 0): '.',
+        ...     (2, 0): '.',
+        ...     (1, 1): 'K',
+        ... })
+        'P..;rK'
+
+    """
+    if not f:
+        return '0'
+    min_x = min(x for x, y in f)
+    min_y = min(y for x, y in f)
+    max_x = max(x for x, y in f)
+    max_y = max(y for x, y in f)
+    w = max_x - min_x + 1
+    h = max_y - min_y + 1
+    lines = []
+    for y in range(min_y, max_y + 1):
+        line = ''.join(
+            f.get((x, y), 'r')
+            for x in range(min_x, max_x + 1))
+        lines.append(line.rstrip('r'))
+    return ';'.join(lines)
+
+
 def print_board(f: Board, *, file=None, border=True):
-    """Prints the given board
+    """Prints the given board, in a format suitable for use with parse_board
+    (if passed to it as a list of strings, one per line)
 
         >>> print_board({})
         ++
@@ -357,10 +436,10 @@ def print_board(f: Board, *, file=None, border=True):
         w = max_x - min_x + 1
         h = max_y - min_y + 1
         lines = []
-        for y in range(h):
+        for y in range(min_y, max_y + 1):
             lines.append(''.join(
-                f.get((x + min_x, y + min_y), ' ')
-                for x in range(w)))
+                f.get((x, y), ' ')
+                for x in range(min_x, max_x + 1)))
         lines.reverse()
     if border:
         print('+' + '-' * w + '+', file=file)
@@ -370,6 +449,115 @@ def print_board(f: Board, *, file=None, border=True):
         print(line, file=file)
     if border:
         print('+' + '-' * w + '+', file=file)
+
+
+def parse_rule(text: str, *, debug=False) -> 'Rule':
+    """Parses a Rule, should be more or less the inverse of Rule.__str__
+
+        >>> print(parse_rule('(p;. -> .;p) | (p;rK -> .;rp) | (rp;K -> r.;p)'))
+        (p;. -> .;p) | (p;rK -> .;rp) | (rp;K -> r.;p)
+
+        >>> print(parse_rule('%p: (%;. -> .;%)(%;. -> .;%)'))
+        %p: (%;. -> .;%)(%;. -> .;%)
+
+    """
+    tokens = [token for token in RULE_TOKEN_REGEX.findall(text)
+        if token.strip()]
+    depth = 0
+    token_i = 0
+    debug_print = lambda msg: None
+    if debug:
+        def debug_print(msg):
+            print('  ' * depth + msg)
+    def get_token():
+        nonlocal token_i
+        _token_i = token_i
+        if token_i >= len(tokens):
+            token = None
+        else:
+            token = tokens[token_i]
+            token_i += 1
+        debug_print(f"get_token @{_token_i}: {token!r}")
+        return token
+    def unget():
+        nonlocal token_i
+        token_i -= 1
+        debug_print(f"unget @{token_i}: {tokens[token_i]!r}")
+    def expect(expected):
+        actual = get_token()
+        if actual != expected:
+            raise Exception(f"Expected {expected!r}, got {actual!r}")
+    def _parse(*, no_binops=False):
+        # Recursive parse step...
+
+        nonlocal depth
+        depth += 1
+
+        token = get_token()
+        if token is None:
+            raise Exception("Unexpected end of string")
+        elif token == '(':
+            rule = _parse()
+            expect(')')
+        elif token[-1] == ':' and token[0] == '%' and len(token) == 3:
+            piece = token[1]
+            rule = _parse()
+            rule = PieceOfInterestRule(piece, rule)
+        else:
+            board_left_token = token
+            board_left = parse_board(board_left_token)
+            token = get_token()
+            if token != '->':
+                raise Exception(f"Expected '->' after {board_left_token!r}, got {token!r}")
+            token = get_token() or ''
+            board_right = parse_board(token)
+            rule = FindAndReplaceRule(board_left, board_right)
+
+        # Handle repetition suffixes
+        token = get_token()
+        if token is None:
+            pass
+        elif token == '*':
+            rule = rule.zero_or_more()
+        elif token == '+':
+            rule = rule.one_or_more()
+        elif token[0] == '{':
+            token = token.strip('{}')
+            if ',' in token:
+                lhs, rhs = token.split(',')
+                n = int(lhs)
+                m = None if not rhs.strip() else int(rhs)
+            else:
+                n = m = int(token)
+            rule = rule.between(n, m)
+        else:
+            unget()
+
+        if no_binops:
+            depth -= 1
+            return rule
+
+        # Handle binary operators on rules
+        while True:
+            while True:
+                token = get_token()
+                if token in (None, ')'):
+                    depth -= 1
+                    if token == ')':
+                        unget()
+                    return rule
+                elif token == '(':
+                    rhs = _parse(no_binops=True)
+                    expect(')')
+                    rule *= rhs
+                else:
+                    break
+            if token == '|':
+                rhs = _parse(no_binops=True)
+                rule |= rhs
+            else:
+                break
+    return _parse()
 
 
 class Movement:
@@ -619,13 +807,34 @@ class Rule:
     def __init__(self):
         raise NotImplementedError("To be implemented by subclasses")
 
+    def __or__(self, other: 'Rule') -> 'OneOfRule':
+        if isinstance(other, OneOfRule):
+            rules = other.rules.copy()
+            rules.insert(0, self)
+            return OneOfRule(rules)
+        return OneOfRule([self, other])
+
     def __mul__(self, other: 'Rule') -> 'SequentialRule':
+        if isinstance(other, SequentialRule):
+            rules = other.rules.copy()
+            rules.insert(0, self)
+            return SequentialRule(rules)
         return SequentialRule([self, other])
 
     def __pow__(self, exp: int) -> 'SequentialRule':
         return SequentialRule([self] * exp)
 
-    def repeat(self, at_least: int = 0, at_most: Optional[int] = None) -> 'RepeatRule':
+    def zero_or_more(self) -> 'RepeatRule':
+        return RepeatRule(self, 0)
+
+    def one_or_more(self) -> 'RepeatRule':
+        return RepeatRule(self, 1)
+
+    def repeat(self, n: int) -> 'RepeatRule':
+        return RepeatRule(self, n, n)
+
+    def between(self, at_least: int, at_most: Optional[int] = None) -> 'RepeatRule':
+        # NOTE: an at_most of None is interpreted as infinity
         return RepeatRule(self, at_least, at_most)
 
     def __call__(self, boards: Union[Board, Iterable[Board]]) -> List[Board]:
@@ -651,7 +860,7 @@ class FindAndReplaceRule(Rule):
         self.replacement = replacement
 
     def __str__(self):
-        return f'{self.pattern} -> {self.replacement}'
+        return f'{board_repr(self.pattern)} -> {board_repr(self.replacement)}'
 
     def __repr__(self):
         return f'{self.__class__.__name__}({self.pattern!r}, {self.replacement!r})'
@@ -671,6 +880,14 @@ class OneOfRule(Rule):
 
     def __repr__(self):
         return f'{self.__class__.__name__}({self.rules!r})'
+
+    def __or__(self, other: 'Rule') -> 'OneOfRule':
+        if isinstance(other, OneOfRule):
+            rules = self.rules + other.rules
+        else:
+            rules = self.rules.copy()
+            rules.append(other)
+        return OneOfRule(rules)
 
     def _apply(self, board: Board) -> List[Board]:
         boards = []
@@ -772,7 +989,7 @@ class RepeatRule(Rule):
 
         If the rule is applied between 2 and 4 times, these are the possible
         board positions:
-        >>> for b in rule.repeat(2, 4)(board): print_board(b)
+        >>> for b in rule.between(2, 4)(board): print_board(b)
         +-+
         |B|
         |d|
@@ -797,7 +1014,7 @@ class RepeatRule(Rule):
 
         If the rule is applied 0 or more times, these are the possible board
         positions:
-        >>> for b in rule.repeat()(board): print_board(b)
+        >>> for b in rule.zero_or_more()(board): print_board(b)
         +-+
         |B|
         |.|
@@ -843,7 +1060,7 @@ class RepeatRule(Rule):
 
     """
 
-    def __init__(self, rule: Rule, at_least: int = 0, at_most: Optional[int] = None):
+    def __init__(self, rule: Rule, at_least: int, at_most: Optional[int] = None):
         if at_most is not None and at_most < at_least:
             raise TypeError(f"Invalid args: {at_most} < {at_least}")
         self.rule = rule
@@ -851,10 +1068,18 @@ class RepeatRule(Rule):
         self.at_most = at_most
 
     def __str__(self):
-        brackets_part = f'{self.at_least}'
-        if self.at_most is not None:
-            brackets_part = f'{brackets_part}, {self.at_most}'
-        brackets_part = '{' + brackets_part + '}'
+        p = self.at_least, self.at_most
+        if p == (0, None):
+            brackets_part = '*'
+        elif p == (1, None):
+            brackets_part = '+'
+        else:
+            brackets_part = f'{self.at_least}'
+            if self.at_most is None:
+                brackets_part += ','
+            elif self.at_most != self.at_least:
+                brackets_part = f'{brackets_part}, {self.at_most}'
+            brackets_part = '{' + brackets_part + '}'
         return f'({self.rule}){brackets_part}'
 
     def __repr__(self):
