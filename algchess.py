@@ -184,7 +184,7 @@ as '%'.
     A rule which says we can move any given pawn forwards twice.
     >>> pawn_move_twice_rule = PieceOfInterestRule('p', move_once_rule ** 2)
     >>> print(pawn_move_twice_rule)
-    %p: (%;. -> .;%)(%;. -> .;%)
+    %p: (%;. -> .;%){2}
 
     >>> board = parse_board([
     ...     '..K.',
@@ -256,6 +256,7 @@ For this, we will use Rule.one_or_more(), which means repeat from 1 to infinity.
 
 """
 import re
+from abc import ABCMeta, abstractmethod
 from typing import List, Dict, Tuple, Iterable, Optional, Union, FrozenSet
 
 
@@ -378,13 +379,19 @@ def board_repr(f: Board) -> str:
     """Returns a string representation of a board, suitable for use with
     parse_board
 
-        >>> board_repr({
+        >>> board = {
         ...     (0, 0): 'P',
         ...     (1, 0): '.',
         ...     (2, 0): '.',
         ...     (1, 1): 'K',
-        ... })
-        'P..;rK'
+        ... }
+
+        >>> for i in range(4):
+        ...     print(board_repr(Movement.rotate(i) * board))
+        P..;rK
+        l^2(rP;K.;r.)
+        l^3 d^2(rK;..P)
+        d^3(.;.K;P)
 
     """
     if not f:
@@ -401,7 +408,10 @@ def board_repr(f: Board) -> str:
             f.get((x, y), 'r')
             for x in range(min_x, max_x + 1))
         lines.append(line.rstrip('r'))
-    return ';'.join(lines)
+    s = ';'.join(lines)
+    if min_x != 0 or min_y != 0:
+        s = f'{Movement.slide(min_x, min_y)}({s})'
+    return s
 
 
 def print_board(f: Board, *, file=None, border=True):
@@ -459,6 +469,9 @@ def parse_rule(text: str, *, debug=False) -> 'Rule':
 
         >>> print(parse_rule('%p: (%;. -> .;%)(%;. -> .;%)'))
         %p: (%;. -> .;%)(%;. -> .;%)
+
+        >>> print(parse_rule('%p: (l^2(.%) -> l^2(%.))+'))
+        %p: (l^2(.%) -> l^2(%.))+
 
     """
     tokens = [token for token in RULE_TOKEN_REGEX.findall(text)
@@ -591,6 +604,13 @@ class Movement:
         >>> m((10, 20))
         (-9, -20)
 
+        >>> for i in range(4):
+        ...     print(Movement.rotate(i) * {(0, 0): 'p'})
+        {(0, 0): 'p'}
+        {(-1, 0): 'p'}
+        {(-1, -1): 'p'}
+        {(0, -1): 'p'}
+
     """
 
     def __init__(self, movements):
@@ -664,7 +684,7 @@ class Movement:
             movements = list(map(self._reverse, self.movements))
         return Movement(movements * abs(exp))
 
-    def __call__(self, other):
+    def __call__(self, other, *, square=False):
         if isinstance(other, tuple):
             x, y = other
             for m in self.movements:
@@ -679,15 +699,22 @@ class Movement:
                         x0 = x
                         x = -y
                         y = x0
+                        if square:
+                            # We aren't rotating a point, we're rotating
+                            # a board square, whose centre is its bottom-left
+                            # corner.
+                            x -= 1
                 else:
                     raise ValueError(f"Unexpected: {m!r}")
             return x, y
         elif isinstance(other, list):
             return [self(x) for x in other]
         elif isinstance(other, dict):
-            return {self(k): v for k, v in other.items()}
+            return {self(k, square=True): v for k, v in other.items()}
         elif isinstance(other, Movement):
             return Movement(self.movements + other.movements)
+        elif isinstance(other, Rule):
+            return other._distribute(self)
         else:
             raise TypeError(type(other))
 
@@ -795,7 +822,7 @@ def find_and_replace(f: Board, g: Board, h: Board) -> List[Board]:
     return [replace(m(g), h) for m in find(f, h)]
 
 
-class Rule:
+class Rule(metaclass=ABCMeta):
     """A rule is a function which maps a board to a set of possible boards,
     i.e. a set of possible "moves" a player might make, taking the board
     from one position to another.
@@ -821,8 +848,8 @@ class Rule:
             return SequentialRule(rules)
         return SequentialRule([self, other])
 
-    def __pow__(self, exp: int) -> 'SequentialRule':
-        return SequentialRule([self] * exp)
+    def __pow__(self, exp: int) -> 'RepeatRule':
+        return self.repeat(exp)
 
     def zero_or_more(self) -> 'RepeatRule':
         return RepeatRule(self, 0)
@@ -846,8 +873,11 @@ class Rule:
                 for board in boards
                 for out_board in self._apply(board))
 
-    def _apply(self, board: Board) -> List[Board]:
-        raise NotImplementedError("To be implemented by subclasses")
+    @abstractmethod
+    def _apply(self, board: Board) -> List[Board]: ...
+
+    @abstractmethod
+    def _distribute(self, m: Movement) -> 'Rule': ...
 
 
 class FindAndReplaceRule(Rule):
@@ -867,6 +897,9 @@ class FindAndReplaceRule(Rule):
 
     def _apply(self, board: Board) -> List[Board]:
         return find_and_replace(self.pattern, self.replacement, board)
+
+    def _distribute(self, m: Movement) -> 'Rule':
+        return FindAndReplaceRule(m * self.pattern, m * self.replacement)
 
 
 class OneOfRule(Rule):
@@ -895,6 +928,9 @@ class OneOfRule(Rule):
             boards.extend(rule(board))
         return boards
 
+    def _distribute(self, m: Movement) -> 'Rule':
+        return OneOfRule([m * rule for rule in self.rules])
+
 
 class SequentialRule(Rule):
     """A rule which consists of applying a sequence of other rules, one
@@ -918,14 +954,14 @@ class SequentialRule(Rule):
             rules.append(other)
         return SequentialRule(rules)
 
-    def __pow__(self, exp: int) -> 'SequentialRule':
-        return SequentialRule(self.rules * exp)
-
     def _apply(self, board: Board) -> List[Board]:
         boards = [board]
         for rule in self.rules:
             boards = rule(boards)
         return boards
+
+    def _distribute(self, m: Movement) -> 'Rule':
+        return SequentialRule([m * rule for rule in self.rules])
 
 
 class PieceOfInterestRule(Rule):
@@ -959,6 +995,9 @@ class PieceOfInterestRule(Rule):
             finally:
                 board[k] = self.piece
         return boards
+
+    def _distribute(self, m: Movement) -> 'Rule':
+        return PieceOfInterestRule(self.piece, m * self.rule)
 
 
 class RepeatRule(Rule):
@@ -1116,3 +1155,6 @@ class RepeatRule(Rule):
                 all_boards.extend(new_boards)
                 boards = new_boards
         return unique_boards(all_boards)
+
+    def _distribute(self, m: Movement) -> 'Rule':
+        return RepeatRule(m * self.rule, self.at_least, self.at_most)
