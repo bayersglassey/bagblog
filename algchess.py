@@ -258,6 +258,7 @@ For this, we will use Rule.one_or_more(), which means repeat from 1 to infinity.
 import re
 from abc import ABCMeta, abstractmethod
 from typing import List, Dict, Tuple, Iterable, Optional, Union, FrozenSet
+from typing import NamedTuple
 
 
 RULE_TOKEN_REGEX = re.compile(r'[()|*+]|%.:|->|{.*}|[^(){}|*+:\->]+')
@@ -269,9 +270,69 @@ Board = Dict[Location, LocationContents]
 BoardKey = FrozenSet[Tuple[Location, LocationContents]]
 
 
+def get_player_bool_choice(msg) -> bool:
+    """Gets input from the user, selecting True or False"""
+    while True:
+        print(msg)
+        print("Choose ('y' or 'n'):")
+        choice = None
+        choice_text = input("> ").strip().lower()
+        if choice_text in ('y', 'n'):
+            return choice_text == 'y'
+        print("### ERROR: Choice must be 'y' or 'n'")
+
+
+def get_player_choice(choices, *, msg=None):
+    """Gets input from the user, selecting one of a number of choices"""
+
+    if isinstance(choices, list):
+        labels = choices
+        values = choices
+    elif isinstance(choices, dict):
+        labels = list(choices)
+        values = list(choices.values())
+    else:
+        raise TypeError(type(choices))
+
+    if not choices:
+        return None
+    elif len(choices) == 1:
+        return values[0]
+
+    if msg is None:
+        msg = "Choose an option:"
+
+    while True:
+        print(msg)
+        for i, label in enumerate(choices, 1):
+            if '\n' in label:
+                label_indented = '\n'.join('    ' + line for line in label.splitlines())
+                print(f" {i}:\n{label_indented}")
+            else:
+                print(f" {i}: {label}")
+        choice = None
+        choice_text = input("> ")
+        try:
+            choice = int(choice_text)
+        except ValueError:
+            pass
+        if choice is None or choice < 1 or choice > len(choices):
+            print(f"### ERROR: Choice must be a number in the range 1..{len(choices)}")
+        else:
+            return values[choice - 1]
+
+
 def board_key(board: Board) -> BoardKey:
     """Returns a hashable representation of a Board"""
     return frozenset(board.items())
+
+
+def get_board_bounds(board: Board) -> Tuple[int, int, int, int]:
+    min_x = min(x for x, y in board)
+    min_y = min(y for x, y in board)
+    max_x = max(x for x, y in board)
+    max_y = max(y for x, y in board)
+    return min_x, min_y, max_x, max_y
 
 
 def replace_piece(p0: LocationContents, p1: LocationContents, board: Board, inplace=True) -> Board:
@@ -396,10 +457,7 @@ def board_repr(f: Board) -> str:
     """
     if not f:
         return '0'
-    min_x = min(x for x, y in f)
-    min_y = min(y for x, y in f)
-    max_x = max(x for x, y in f)
-    max_y = max(y for x, y in f)
+    min_x, min_y, max_x, max_y = get_board_bounds(f)
     w = max_x - min_x + 1
     h = max_y - min_y + 1
     lines = []
@@ -439,10 +497,7 @@ def print_board(f: Board, *, file=None, border=True):
         h = 0
         lines = []
     else:
-        min_x = min(x for x, y in f)
-        min_y = min(y for x, y in f)
-        max_x = max(x for x, y in f)
-        max_y = max(y for x, y in f)
+        min_x, min_y, max_x, max_y = get_board_bounds(f)
         w = max_x - min_x + 1
         h = max_y - min_y + 1
         lines = []
@@ -470,6 +525,7 @@ def parse_rule(text: str, *, debug=False) -> 'Rule':
         >>> print(parse_rule('%p: (%;. -> .;%)(%;. -> .;%)'))
         %p: (%;. -> .;%)(%;. -> .;%)
 
+        TODO: make this test pass!..
         >>> print(parse_rule('%p: (l^2(.%) -> l^2(%.))+'))
         %p: (l^2(.%) -> l^2(%.))+
 
@@ -530,6 +586,8 @@ def parse_rule(text: str, *, debug=False) -> 'Rule':
         token = get_token()
         if token is None:
             pass
+        elif token == '?':
+            rule = rule.optionally()
         elif token == '*':
             rule = rule.zero_or_more()
         elif token == '+':
@@ -632,11 +690,11 @@ class Movement:
         return Movement([])
 
     @staticmethod
-    def slide(x, y) -> 'Movement':
+    def slide(x: int = 0, y: int = 0) -> 'Movement':
         return Movement([(x, y)])
 
     @staticmethod
-    def rotate(r) -> 'Movement':
+    def rotate(r: int = 1) -> 'Movement':
         return Movement([r % 4])
 
     def __str__(self):
@@ -715,6 +773,9 @@ class Movement:
             return Movement(self.movements + other.movements)
         elif isinstance(other, Rule):
             return other._distribute(self)
+        elif isinstance(other, str):
+            # Allows movements to be applied to e.g. PieceOfInterestRule.piece
+            return other
         else:
             raise TypeError(type(other))
 
@@ -834,6 +895,42 @@ class Rule(metaclass=ABCMeta):
     def __init__(self):
         raise NotImplementedError("To be implemented by subclasses")
 
+    def prettystring(self) -> str:
+        as_str = str(self)
+
+        rhs = as_str
+        as_str = ''
+        while ':' in rhs:
+            lhs, rhs = rhs.split(':', 1)
+            depth = 0
+            for i, c in enumerate(rhs):
+                if c == '(':
+                    depth += 1
+                elif c == ')':
+                    depth -= 1
+                    if depth < 0:
+                        break
+            rhs = rhs[i:]
+            as_str += f'{lhs}: ...'
+        as_str += rhs
+
+        parts = as_str.split(' | ')
+        depth = 0
+        lines = []
+        last_i = len(parts) - 1
+        for i, part in enumerate(parts):
+            spaces = '  ' * depth
+            line = spaces + part
+            if i < last_i:
+                line += ' |'
+            lines.append(line)
+            for c in part:
+                if c == '(':
+                    depth += 1
+                elif c == ')':
+                    depth -= 1
+        return '\n'.join(lines)
+
     def __or__(self, other: 'Rule') -> 'OneOfRule':
         if isinstance(other, OneOfRule):
             rules = other.rules.copy()
@@ -850,6 +947,9 @@ class Rule(metaclass=ABCMeta):
 
     def __pow__(self, exp: int) -> 'RepeatRule':
         return self.repeat(exp)
+
+    def optionally(self) -> 'RepeatRule':
+        return RepeatRule(self, 0, 1)
 
     def zero_or_more(self) -> 'RepeatRule':
         return RepeatRule(self, 0)
@@ -877,6 +977,9 @@ class Rule(metaclass=ABCMeta):
     def _apply(self, board: Board) -> List[Board]: ...
 
     @abstractmethod
+    def _player_choice(self, board: Board) -> Optional[Board]: ...
+
+    @abstractmethod
     def _distribute(self, m: Movement) -> 'Rule': ...
 
 
@@ -885,7 +988,22 @@ class FindAndReplaceRule(Rule):
     and replacing it with another (the "replacement").
     """
 
-    def __init__(self, pattern: Board, replacement: Board):
+    def __init__(self, pattern: Board, replacement: Board, *, raw=False):
+
+        if not raw:
+            # Apply the same movement to pattern & replacement, such that
+            # the rule's behaviour remains the same, but its string
+            # representation becomes a bit cleaner (contains fewer movements)
+            pattern_bounds = get_board_bounds(pattern)
+            replacement_bounds = get_board_bounds(replacement)
+            min_x = min(pattern_bounds[0], replacement_bounds[0])
+            min_y = min(pattern_bounds[1], replacement_bounds[1])
+            if min_x or min_y:
+                pattern = {(x - min_x, y - min_y): v
+                    for (x, y), v in pattern.items()}
+                replacement = {(x - min_x, y - min_y): v
+                    for (x, y), v in replacement.items()}
+
         self.pattern = pattern
         self.replacement = replacement
 
@@ -897,6 +1015,12 @@ class FindAndReplaceRule(Rule):
 
     def _apply(self, board: Board) -> List[Board]:
         return find_and_replace(self.pattern, self.replacement, board)
+
+    def _player_choice(self, board: Board) -> Optional[Board]:
+        print(f"Matching find-and-replace rule: {self.prettystring()}")
+        movements = find(self.pattern, board)
+        movement = get_player_choice(movements, msg="Choose a location at which to apply the replacement:")
+        return movement and replace(movement(self.replacement), board)
 
     def _distribute(self, m: Movement) -> 'Rule':
         return FindAndReplaceRule(m * self.pattern, m * self.replacement)
@@ -927,6 +1051,13 @@ class OneOfRule(Rule):
         for rule in self.rules:
             boards.extend(rule(board))
         return boards
+
+    def _player_choice(self, board: Board) -> Optional[Board]:
+        rules = [rule for rule in self.rules
+            if rule(board)]
+        rule_choices = {rule.prettystring(): rule for rule in rules}
+        rule = get_player_choice(rule_choices, msg="Choose a rule to apply:")
+        return rule and rule._player_choice(board)
 
     def _distribute(self, m: Movement) -> 'Rule':
         return OneOfRule([m * rule for rule in self.rules])
@@ -960,6 +1091,14 @@ class SequentialRule(Rule):
             boards = rule(boards)
         return boards
 
+    def _player_choice(self, board: Board) -> Optional[Board]:
+        for i, rule in enumerate(self.rules, 1):
+            if board is None:
+                return None
+            print(f"Applying rule {i} in a sequence of {len(self.rules)}: {rule.prettystring()}")
+            board = rule._player_choice(board)
+        return board
+
     def _distribute(self, m: Movement) -> 'Rule':
         return SequentialRule([m * rule for rule in self.rules])
 
@@ -979,6 +1118,13 @@ class PieceOfInterestRule(Rule):
     def __repr__(self):
         return f'{self.__class__.__name__}({self.piece!r}, {self.rule!r})'
 
+    def _apply_at(self, board: Board, location: Location) -> List[Board]:
+        board[location] = '%'
+        try:
+            return self.rule(board)
+        finally:
+            board[location] = self.piece
+
     def _apply(self, board: Board) -> List[Board]:
         if any(v == '%' for v in board.values()):
             return self.rule(board)
@@ -987,17 +1133,30 @@ class PieceOfInterestRule(Rule):
         for k in keys:
             if board[k] != self.piece:
                 continue
-            board[k] = '%'
-            try:
-                boards.extend(
-                    replace_piece('%', self.piece, board)
-                    for board in self.rule(board))
-            finally:
-                board[k] = self.piece
+            boards.extend(replace_piece('%', self.piece, board)
+                for board in self._apply_at(board, k))
         return boards
 
+    def _player_choice(self, board: Board) -> Optional[Board]:
+        if any(v == '%' for v in board.values()):
+            return self.rule._player_choice(board)
+        print(f"Searching for locations of {self.piece} on board:")
+        print_board(board)
+        locations = [k for k, v in board.items() if v == self.piece
+            and self._apply_at(board, k)]
+        location = get_player_choice(locations, msg=f"Choose the location of the {self.piece} to move:")
+        if not location:
+            return None
+        original_board = board
+        original_board[location] = '%'
+        try:
+            board = self.rule._player_choice(original_board)
+            return board and replace_piece('%', self.piece, board)
+        finally:
+            original_board[location] = self.piece
+
     def _distribute(self, m: Movement) -> 'Rule':
-        return PieceOfInterestRule(self.piece, m * self.rule)
+        return PieceOfInterestRule(m * self.piece, m * self.rule)
 
 
 class RepeatRule(Rule):
@@ -1156,5 +1315,207 @@ class RepeatRule(Rule):
                 boards = new_boards
         return unique_boards(all_boards)
 
+    def _player_choice(self, board: Board) -> Optional[Board]:
+        i = 0
+        while True:
+            if board is None:
+                return None
+            if self.at_most is not None and i >= self.at_most or not self.rule(board):
+                break
+            print(f"Applying repetition {i + 1} of rule: {self.rule.prettystring()}")
+            if i >= self.at_least:
+                print("The board now looks like:")
+                print_board(board)
+                should_continue = get_player_bool_choice(f"Apply the rule again? {self.rule.prettystring()}")
+                if not should_continue:
+                    break
+            board = self.rule._player_choice(board)
+            i += 1
+        return board
+
     def _distribute(self, m: Movement) -> 'Rule':
         return RepeatRule(m * self.rule, self.at_least, self.at_most)
+
+
+class Game(NamedTuple):
+    rule: Rule
+    initial_board: Board
+
+
+TIC_TAC_TOE = Game(
+    rule=OneOfRule([
+        parse_rule('. -> X'),
+        parse_rule('. -> O'),
+    ]),
+    initial_board=parse_board('...;...;...'),
+)
+
+SNAKE_BODY = '↑←↓→'
+SNAKE_TAIL = '↟↞↡↠'
+SNAKE_PIECES = SNAKE_BODY + SNAKE_TAIL
+def snake_rotate_piece(piece: str, n: int) -> str:
+    if piece in SNAKE_PIECES:
+        i = SNAKE_PIECES.index(piece)
+        i = (i // 4) * 4 + (i + n) % 4
+        return SNAKE_PIECES[i]
+    else:
+        return piece
+class SnakeRotateMovement:
+    def __init__(self, n: int):
+        self.n = n
+        self.rotate = Movement.rotate(n)
+    def __call__(self, other):
+        if isinstance(other, str):
+            return snake_rotate_piece(other, self.n)
+        elif isinstance(other, dict):
+            n = self.n
+            other = self.rotate * other
+            for k, v in other.items():
+                other[k] = snake_rotate_piece(v, n)
+            return other
+        elif isinstance(other, Rule):
+            return other._distribute(self)
+        else:
+            raise TypeError(type(other))
+    __mul__ = __call__
+_SNAKE_TAIL_FOLLOW_RULE = parse_rule('(↟;↑ -> .;↟)|(↟;→ -> .;↠)|(↟;← -> .;↞)')
+SNAKE = Game(
+    rule=OneOfRule([
+        SnakeRotateMovement(i) * rule
+        for i in range(4)
+        for rule in (
+            # Eat:
+            parse_rule('S;$ -> ↑;S'),
+            # Move:
+            parse_rule('S;. -> ↑;S') * OneOfRule([
+                SnakeRotateMovement(i) * _SNAKE_TAIL_FOLLOW_RULE
+                for i in range(4)
+            ]),
+        )
+    ]),
+    initial_board=parse_board([
+        ' .$.....',
+        '.............',
+        '..↠S.$..  .$$',
+        '$.......   $$',
+        '......$.',
+    ]),
+)
+
+CHESS_PIECES_UNFILLED = '♙♔♕♗♘♖'
+CHESS_PIECES_FILLED = '♟♚♛♝♞♜'
+CHESS_PIECES = CHESS_PIECES_UNFILLED + CHESS_PIECES_FILLED
+def chess_reverse_piece(piece: str) -> str:
+    if piece in CHESS_PIECES:
+        l = len(CHESS_PIECES)
+        i = CHESS_PIECES.index(piece) + l // 2
+        return CHESS_PIECES[i % l]
+    else:
+        return piece
+class ChessReverseMovement:
+    rotate = Movement.rotate(2)
+    def __call__(self, other):
+        if isinstance(other, str):
+            return chess_reverse_piece(other)
+        elif isinstance(other, dict):
+            other = self.rotate * other
+            for k, v in other.items():
+                other[k] = chess_reverse_piece(v)
+            return other
+        elif isinstance(other, Rule):
+            return other._distribute(self)
+        else:
+            raise TypeError(type(other))
+    __mul__ = __call__
+_CHESS_ROOK_RULE = OneOfRule([
+    # Just move
+    parse_rule('%;. -> .;%').one_or_more(),
+] + [
+    # Move and take
+    parse_rule('%;. -> .;%').zero_or_more() * parse_rule(f'%;{piece} -> .;%')
+    for piece in CHESS_PIECES_FILLED
+])
+_CHESS_BISHOP_RULE = OneOfRule([
+    # Just move
+    parse_rule('%;l. -> .;l%').one_or_more(),
+] + [
+    # Move and take
+    parse_rule('%;l. -> .;l%').zero_or_more() * parse_rule(f'%;l{piece} -> .;l%')
+    for piece in CHESS_PIECES_FILLED
+])
+CHESS_RULE = OneOfRule([
+    PieceOfInterestRule('♙', OneOfRule([
+        parse_rule('(%;. -> .;%){1, 2}'),
+    ] + [rule
+        for piece in CHESS_PIECES_FILLED
+        for rule in (
+            parse_rule(f'%;r{piece} -> .;r%'),
+            parse_rule(f'%;l{piece} -> .;l%'),
+        )
+    ])),
+    PieceOfInterestRule('♔', OneOfRule([
+        Movement.rotate(i) * rule
+        for i in range(4)
+        for rule in (
+            parse_rule('%;. -> .;%'),
+            parse_rule('%;l. -> .;l%'),
+        )
+    ] + [
+        # Super ganky castling... do it anywhere, anytime you like! ;)
+        parse_rule('♖..% -> .%♖.'),
+        parse_rule('%...♖ -> .♖%..'),
+    ])),
+    PieceOfInterestRule('♕', OneOfRule([
+        Movement.rotate(i) * rule
+        for i in range(4)
+        for rule in (_CHESS_BISHOP_RULE, _CHESS_ROOK_RULE)
+    ])),
+    PieceOfInterestRule('♗', OneOfRule([
+        Movement.rotate(i) * _CHESS_BISHOP_RULE
+        for i in range(4)
+    ])),
+    PieceOfInterestRule('♘', OneOfRule([
+        Movement.rotate(i) * rule
+        for i in range(4)
+        for rule in (
+            parse_rule('%;;r. -> .;;r%'),
+            parse_rule('%;;l. -> .;;l%'),
+        )
+    ])),
+    PieceOfInterestRule('♖', OneOfRule([
+        Movement.rotate(i) * _CHESS_ROOK_RULE
+        for i in range(4)
+    ])),
+])
+CHESS = Game(
+    rule=OneOfRule([
+        CHESS_RULE,
+        ChessReverseMovement() * CHESS_RULE,
+    ]),
+    initial_board=parse_board([
+        '♜♞♝♚♛♝♞♜',
+        '♟♟♟♟♟♟♟♟',
+        '........',
+        '........',
+        '........',
+        '........',
+        '♙♙♙♙♙♙♙♙',
+        '♖♘♗♔♕♗♘♖',
+    ]),
+)
+
+
+def play_game(game: Game):
+    rule = game.rule
+    board = game.initial_board
+    turn_no = 1
+    while True:
+        print()
+        print('=' * 40)
+        print(f"=== TURN {turn_no}:")
+        if board is None:
+            print("Out of options! Game over.")
+            break
+        print_board(board)
+        board = rule._player_choice(board)
+        turn_no += 1
