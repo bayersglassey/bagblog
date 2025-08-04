@@ -1217,7 +1217,7 @@ And, since we said that all our operators distribute over `|`, this means that:
 ...do you believe me?
 
 
-## Extending chess algebra
+## Expressing more complex chess rules algebraically
 
 So far, we've seen how to describe simple piece movements.
 But what about castling?.. what about pawn promotion?.. what about pawns
@@ -1259,6 +1259,219 @@ using the board fragment f as a sort of condition.
 But it's a bit more complicated than that...
 
 TODO: introduce "matching", "finding", and "replacing"?..
+
+
+## Expressing players, turns, scores, victory, etc
+
+So far, we've tried to express the movement of pieces on a board, but we've
+avoided overarching rules like how players take turns moving, how the game
+ends (e.g. in win/loss/tie), etc.
+Let's figure that out now.
+
+Now, we need a way for board fragments to include information about which
+player's turn it is to move.
+We could introduce some new syntax for this, but in fact we can also just
+use our existing operators!
+Consider the meaning of `f + g`, that is, the board fragment we get by gluing
+together two non-overlapping board fragments, f and g.
+And when do board fragments overlap?.. when they have squares (empty, or
+with a piece on them) at the same location.
+And locations are defined by the movements u, d, l, and r.
+In other words, locations form a 2-dimensional grid.
+But what if we introduce a special "location" of the board, which is off the
+grid?.. we could put a piece there to show which player's turn it is.
+If you like, you can imagine a chessboard with a little box off to the side,
+big enough for one chess piece.
+The white and black players each have an extra chess piece, and one of these
+pieces is always in the box, to show whose move it is.
+So, part of every chess move is to swap your extra piece out of the box for
+your opponent's.
+With that in mind, let's introduce a "movement", T (for "turn"), which moves
+a piece to a special location off the board's grid.
+
+So for instance, `T♔` represents a board fragment consisting of a single
+square, with a king on it, moved off the board into a special box!
+We could define this movement in various ways; for instance, do we allow
+`TT♔`?.. is that equal to `T♔`?.. and how about `Tr♔`, where we slide the
+king to the right and then move it into the special box?.. presumably that's
+also equal to `T♔`, that is, the king ends up in the special box in either
+case?.. but then what is the meaning of `T(♔♕)`, that is, sliding a
+board fragment consisting of a king and queen sitting side by side, into
+the special box?.. does the special box only fit one piece, or is it actually
+a special *grid*, off to the side of the main grid?..
+
+For simplicity's sake, let's simply disallow the application of T to anything
+except a single piece or empty square, e.g. `T(♔♕)` is disallowed.
+So, the "special box" consists of a single square, not a separate grid.
+And let's say that `Tm = T` for any movement m, and T distributes over `+`,
+just like other movements do.
+So for instance, `r(. + T♔) = r. + T♔`.
+That is, we can slide a board fragment around without affecting whose turn
+to move it is.
+
+We can now express the opening position in chess, which is:
+
+    ♜♞♝♚♛♝♞♜
+    ♟♟♟♟♟♟♟♟
+    ........
+    ........
+    ........       ♔  <- the special box, whose piece's colour shows which
+    ........             player is to move
+    ♙♙♙♙♙♙♙♙
+    ♖♘♗♔♕♗♘♖
+
+Let's briefly consider a game with simpler rules of "piece movement" than
+chess, for instance tic-tac-toe.
+We can reuse our operators for building up a board of squares, like `0`,
+`.`, `+`, `u`, `d`, `l`, `r`, `;`, concatenation, etc.
+We can likewise reuse our operators for building up rules, like `->`, `|`,
+`+`, `*`, concatenation, etc.
+
+Here is an empty tic-tac-toe board:
+
+    ...
+    ...
+    ...
+
+...or, expressed algebraically, `...;...;...`.
+
+And now, here is an empty tic-tac-toe board, where it is X's turn to move:
+
+    ...
+    ...     X <- the special box saying whose turn it is to move
+    ...
+
+...or, expressed algebraically, `TX + ...;...;...`.
+
+Now, the tic-tac-toe rules of piece "movement" are simple: pieces never
+move, they are simply placed onto empty squares.
+If we ignore the question of whose turn it is, that means the rule for
+tic-tac-toe pieces is:
+
+    Place an X on an empty square, or place an O on an empty square:
+
+    (. -> X) | (. -> O)
+
+Does that make sense?..
+I sure hope so, because now we can express the rules of tic-tac-toe including
+which player is to move:
+
+    If it is X's turn to move, an empty square may be replaced with an X
+    and it becomes O's turn to move.
+    Likewise, if it is O's turn to move, an empty square may be replaced
+    with an O and it becomes X's turn to move.
+
+    (TX + . -> TO + X) | (TO + . -> TX + O)
+
+Heyyyy! It's tic-tac-toe algebra.
+
+Now how do we describe a player winning the game?..
+We could add another "special box" which indicates a winner!..
+Let's use W for the movement which puts a piece in the "winner box".
+So for instance, `WX` is the board fragment with no grid of squares, yet
+where X has won.
+And `WX + ...;...;...` is the board fragment with an empty 3x3 grid of
+squares, and also X has won.
+Obviously these situations can never occur when playing tic-tac-toe, but
+we can describe them!..
+Now let's try to describe rules for winning tic-tac-toe:
+
+    If there is a horizontal line of Xs, then X wins:
+
+    XXX -> WX + XXX
+
+    If there is a vertical line of Xs, then X wins:
+
+    X;X;X -> WX + X;X;X
+
+    If there is a diagonal line of Xs, then X wins:
+
+    X;rX;rrX -> WX + X;rX;rrX
+    X;lX;llX -> WX + X;lX;llX
+
+...and we can have similar rules for O.
+
+But can we easily combine all those rules into one?..
+
+    If there is a horizontal, vertical, or diagonal line of Xs, then X wins:
+
+    (XXX | X;X;X | X;rX;rrX | X;lX;llX) -> WX
+
+...the problem with that rule is that it removes the line of Xs from the
+board!.. for instance, if we apply that rule to this board fragment:
+
+    X.O
+    ...
+    O.X
+
+...then we get this board fragment, which has missing squares:
+
+     .O
+    . .    X <- the special box indicating that X won
+    O.
+
+...which is a bit strange.
+Maybe it's fine, though; you're still able to play tic-tac-toe and win,
+you just happen to blow some holes in your board in the process!
+
+If you're confused about why holes have appeared in the board, and are
+wondering whether that's necessarily true, or whether I've simply made
+it up just now: it is necessarily true, according to the rigorous
+definition of rule application, which I have not yet described to you.
+So far, I have simply been showing examples, and hoping that they suffice
+for an intuitive understanding of rule application; but there is also an
+exact definition of rule application, which I will describe later on.
+
+Naturally, we can always find syntax to express what we want.
+In this case, we might do something like:
+
+    If there is a horizontal, vertical, or diagonal line of Xs, then that
+    line of Xs remains on the board, *and* X wins:
+
+    x_line -> x_line + WX
+    ...for all x_line in the set of board fragments:
+        XXX | X;X;X | X;rX;rrX | X;lX;llX
+
+...and in fact, while we're at it, we can use this trick to handle winning
+for X and O at the same time:
+
+    x_line -> x_line + WP
+    ...for all P in the set (X | O) and x_line in the set:
+        PPP | P;P;P | P;rP;rrP | P;lP;llP
+
+...which is just a fancy way of writing:
+
+    If either player has a line of 3 pieces, they win:
+
+    (
+        (XXX -> XXX + WX) |
+        (X;X;X -> X;X;X + WX) |
+        (X;rX;rrX -> X;rX;rrX + WX) |
+        (X;lX;llX -> X;lX;llX + WX) |
+        (OOO -> OOO + WO) |
+        (O;O;O -> O;O;O + WO) |
+        (O;rO;rrO -> O;rO;rrO + WO) |
+        (O;lO;llO -> O;lO;llO + WO)
+    )
+
+...now imagine writing out a similar set of rules for chess!
+It could be done, but it would be much easier if we allow ourselves more
+powerful syntax such as "for all P in the set ...", which lets us write
+out the equivalent of many rules, without having to write them all out
+individually.
+
+
+### Side note: alternate representations of winning
+
+TODO: discuss "X wins", "O wins", and "draw" as being entire "board fragments",
+that is, which are unchanged under the `+` operator.
+
+### Side note: the idea of "special boxes" and hands of cards
+
+TODO...
+
+    ♦♣♠♥
+    ♢♧♤♡
 
 
 ## What can we do with it?
