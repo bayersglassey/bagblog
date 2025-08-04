@@ -45,14 +45,15 @@ unfilled and filled kings begin the game on squares d1 and d8, respectively.
 We may sometimes describe moves according to standard chess notation, e.g.
 "♙d4 ♞d5" means a turn where unfilled player moves a pawn to d4, and filled
 player moves their knight to d5.
-An "x" means "takes", for instance "♞xc3" means "knight takes on c3".
+An "x" means "takes", for instance "♞xc3" means "knight takes the enemy piece
+on c3", or "knight takes on c3" for short.
 
 
 ## The basic variant
 
 For our irreversible chess variant, we will begin with all the standard
 rules of chess, but impose restrictions on the movements of the pieces,
-blocking any which might be reversible.
+disallowing any which might be reversible.
 We require that our variant be a strict subset of regular chess: that is,
 every valid move in our variant must be a valid move in regular chess, but
 not vice versa.
@@ -114,6 +115,9 @@ For instance, is running one's king to safety the most effective strategy?
 And if so, are there any effective counter-strategies?
 Let's think of some...
 
+
+### Running kings to safety
+
 Can we simply use our pawns? Let's say the unfilled king is on the run,
 and we are the filled player.
 If we have an unbroken pawn line, we can stop the king in his tracks:
@@ -143,9 +147,9 @@ Indeed, both kings are now completely stuck!.. and so the question
 becomes whether either of the players can achieve checkmate.
 
 In fact, one interesting question might be which squares of the board
-each player is able to "attack" (i.e. take on).
-Or, to ask the reverse question, which squares of the board are "safe"
-for each player?
+each player is able to "attack".
+(We could also ask the reverse question, of which squares of the board
+are "safe" for each player.)
 Clearly, neither player can "attack" their own home rank, since pieces
 must always move forwards.
 But let's consider more generally, for each piece, which squares it is
@@ -215,6 +219,9 @@ So, perhaps a good strategy is to try and immobilize the enemy king, either
 with pawns or one's own king, and then come along behind with one's queen
 to deliver the checkmate?..
 
+
+### On pawns in the variant
+
 Let's consider the pawns.
 The movement of pawns in our variant is unchanged; however, I believe we may
 say that they have become more powerful, because it is very difficult to
@@ -234,7 +241,7 @@ is busy elsewhere on the board):
 The following situation is even worse: the queen is one rank closer, and now
 she cannot take even a single pawn safely.
 Remember, she can't move horizontally!.. in order to attack the sidemost pawns,
-she will need to make a diagonal movement, but the pawns have covered every
+she will need to make a diagonal movement, but the pawns are attacking every
 square to which she can move:
 
     ..♟...♟.
@@ -246,7 +253,10 @@ square to which she can move:
 So, perhaps we should expect high-level play in our chess variant to have an
 emphasis on pawn tactics and strategy?..
 
-Let's consider how to assign an approximate "value" to each piece on the board.
+
+### Values of the pieces
+
+Let's consider whether we can assign an approximate "value" to each piece.
 In regular chess, when e.g. deciding whether to trade two pieces during the
 early or mid game, often a system of "relative values" of the pieces is used,
 for instance:
@@ -259,11 +269,25 @@ for instance:
 
 ...meaning that for instance a knight is worth 3 pawns, or a queen 3 knights,
 etc.
+To be clear, this "points system" is not part of the rules of chess, and is
+only a way to estimate whether a given trade might be worthwhile.
+But context is everything: the true worth of a piece comes from whether it can
+prevent your opponent from checkmating you, or help you to checkmate your
+opponent.
+Therefore, if you have a pawn in a position from which it can checkmate the
+enemy king, then that pawn is not worth "1 point", it is worth the entire game.
+However, if it's not yet clear to you how either player might deliver checkmate,
+then the "point system" may be a useful way to help you make decisions about
+which of your pieces to give up in exchange for taking an opposing piece, or
+protecting one of your own.
+
 In our variant, we have already seen that the rook is likely "worth" much less
-then in regular chess.
-But... does this system of assigning values to each piece even make sense in
-our variant? It is typically used to decide whether to make a trade, or to
-assign a "value" to a given board position as a whole.
+then in regular chess, since it is unable to move away from the side of the
+board, and can therefore only indirectly affect pieces on the rest of the board.
+But... does this system of assigning a single estimated value to each piece
+even make sense in our variant?
+It is typically used to decide whether to make a trade, or to assign a "value"
+to a given board position as a whole.
 But consider the following fragment of a position:
 
     ..♔.
@@ -271,10 +295,6 @@ But consider the following fragment of a position:
 
 The filled queen is *past* the unfilled king, and can therefore never be used
 to give check.
-In fact, the queen is no longer able to take or block the king, *or* any piece
-which can take or block the king, *or* any piece which can take or block any
-piece which can take or block the king, *or*... etc.
-
 The queen's value in this case should therefore be very much diminished!..
 Should her value be zero?.. not quite: perhaps a position will arise later
 where this queen is the only piece with a valid move, or perhaps there is an
@@ -304,21 +324,31 @@ It is left as an excercise to the reader to determine how best to quickly
 determine, for other pieces, how to tell at a glance whether their is any
 overlap in the squares reachable by that piece and an enemy king.
 
-Let's consider the concepts from regular chess of opening, mid, and late game.
+
+### Early, mid, and late game
+
+Let's consider the concepts from regular chess of early, mid, and late game.
 Do they still apply?..
-Certainly, one could memorize opening sequences for our chess variant.
+
+The "early game" is characterized by memorization, since the initial position
+is always the same.
+A memorized sequence of opening moves is known as "an opening", and many are
+known by name: Queen's Gambit, King's Gambit, Ruy Lopez, Sicilian, etc.
+Certainly, one could memorize opening sequences for our chess variant; but
+how do the known openings for *regular* chess fare in our variant?..
 It seems to me that, in general, "good" openings for regular chess are in
 no way guaranteed to be "good" in the variant.
 For instance, often a position in regular chess is good because it threatens
-certain moves; but many moves which are "safe" in regular chess are no longer
-so in the variant, because pieces can no longer retreat.
-That is, once a piece is committed to an attack, it can generally no longer
-be recalled to safety.
+certain moves; but if they are defended against, then the threatening piece
+may need to retreat or reposition, which is generally difficult in our variant.
 
-The late game, in regular chess, is often defined as beginning once a certain
-number (or combined value) of pieces have been removed from the board.
+The "late game", in regular chess, is often defined as beginning once a
+certain number (or combined value) of pieces have been removed from the board.
 But in our variant, I suspect that in many games, most pieces will not be
 taken, but rather "abandoned" once they are passed by the enemy king.
+And whereas in regular chess, the late game often involves a long back-and-forth
+king chase (or the threat of one), in our variant a king chase can only "last"
+so many moves before the king has been passed.
 
 How about some other tenets of regular chess strategy?.. for instance, in
 regular chess, the center of the board is often considered important: either
