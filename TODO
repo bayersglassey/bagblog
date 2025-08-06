@@ -3,6 +3,13 @@
 Make sure RepeatRule._apply makes use of self.greedy
 
 
+The behaviours of Rule.__or__ and Rule.__mul__ mean that Rule.__str__ and parse_rule
+are not quite inverses of each other.
+In particular, str(parse_rule(str(CHESS.rule))) != str(CHESS.rule).
+It doesn't affect the behaviour of Rule._apply, but it does affect the behaviour of
+Rule._player_choice.
+
+
 Port this to Markdown here:
 https://forums.tigsource.com/index.php?topic=71325.msg1444398#msg1444398
 

@@ -261,7 +261,14 @@ from typing import List, Dict, Tuple, Iterable, Optional, Union, FrozenSet
 from typing import NamedTuple
 
 
-RULE_TOKEN_REGEX = re.compile(r'[()|*+]|%.:|->|{.*}|[^(){}|*+:\->]+')
+MOVEMENT_REGEX = re.compile(r'[udlrR](?:\^-?\d+)?')
+RULE_TOKEN_REGEX = re.compile('|'.join((
+    r'[()|*+]',
+    r'%.:',
+    r'->',
+    r'{.*?}',
+    r'(?:[udlrR^0-9 *-]*)?[^(){}|*+:\->]+',
+)))
 
 
 Location = Tuple[int, int]
@@ -375,6 +382,63 @@ def unique_boards(boards: Iterable[Board]) -> List[Board]:
     return list(found.values())
 
 
+def parse_movement(text: str) -> 'Movement':
+    """Parses a Movement from the given text
+
+        >>> print(parse_movement('1'))
+        1
+
+        >>> print(parse_movement('u'))
+        u
+
+        >>> print(parse_movement('uu'))
+        u u
+
+        >>> print(parse_movement('u^2'))
+        u^2
+
+        >>> print(parse_movement('u^-2'))
+        d^2
+
+        >>> print(parse_movement('u^2 d^0'))
+        u^2
+
+        >>> print(parse_movement('u^2 R'))
+        u^2 R
+
+        >>> print(parse_movement('u^2 R^4'))
+        u^2
+
+    """
+    mm = []
+    for part in MOVEMENT_REGEX.findall(text):
+        c = part[0]
+        if c == '1':
+            continue
+        if '^' in part:
+            n = int(part[2:])
+            if n == 0:
+                continue
+        else:
+            n = 1
+        if c == 'u':
+            mm.append((0, n))
+        elif c == 'd':
+            mm.append((0, -n))
+        elif c == 'l':
+            mm.append((-n, 0))
+        elif c == 'r':
+            mm.append((n, 0))
+        elif c == 'R':
+            n = n % 4
+            if n == 0:
+                continue
+            mm.append(n)
+        else:
+            raise Exception(f"Unexpected: {c!r}")
+    return Movement(mm)
+
+
 def parse_board(lines_or_text, x0=0, y0=0) -> Board:
     """Parses a board from the given text (or lines of text)
 
@@ -414,10 +478,22 @@ def parse_board(lines_or_text, x0=0, y0=0) -> Board:
         (1, 0): '^.p'
         (2, 0): '.'
 
+        >>> f = parse_board('l^2 * .p')
+        >>> for k, v in f.items(): print(f'{k!r}: {v!r}')
+        (-2, 0): '.'
+        (-1, 0): 'p'
+
     """
     f = {}
     if isinstance(lines_or_text, str):
         text = lines_or_text
+
+        if '*' in text:
+            parts = text.split('*')
+            text = parts.pop()
+            m_text = ''.join(parts)
+            x0, y0 = parse_movement(m_text)((x0, y0))
+
         x = x0
         y = y0
         it = iter(text)
@@ -485,9 +561,9 @@ def board_repr(f: Board) -> str:
         >>> for i in range(4):
         ...     print(board_repr(Movement.rotate(i) * board))
         P..;rK
-        l^2(rP;K.;r.)
-        l^3 d^2(rK;..P)
-        d^3(.;.K;P)
+        l^2 * rP;K.;r.
+        l^3 d^2 * rK;..P
+        d^3 * .;.K;P
 
         >>> board = {
         ...     (0, 0): '.',
@@ -519,7 +595,7 @@ def board_repr(f: Board) -> str:
         lines.append(line.rstrip('r'))
     s = ';'.join(lines)
     if min_x != 0 or min_y != 0:
-        s = f'{Movement.slide(min_x, min_y)}({s})'
+        s = f'{Movement.slide(min_x, min_y)} * {s}'
     return s
 
 
@@ -576,9 +652,8 @@ def parse_rule(text: str, *, debug=False) -> 'Rule':
         >>> print(parse_rule('%p: (%;. -> .;%)(%;. -> .;%)'))
         %p: (%;. -> .;%)(%;. -> .;%)
 
-        TODO: make this test pass!..
-        >>> print(parse_rule('%p: (l^2(.%) -> l^2(%.))+'))
-        %p: (l^2(.%) -> l^2(%.))+
+        >>> print(parse_rule('%p: (.;% -> r^2 * %;.)+'))
+        %p: (.;% -> r^2 * %;.)+
 
     """
     tokens = [token for token in RULE_TOKEN_REGEX.findall(text)
@@ -985,6 +1060,9 @@ class Rule(metaclass=ABCMeta):
 
     def __init__(self):
         raise NotImplementedError("To be implemented by subclasses")
+
+    def __eq__(self, other):
+        return isinstance(other, Rule) and (self is other or str(self) == str(other))
 
     def to_user_choice_repr(self) -> str:
         return self.prettystring(short=True)
