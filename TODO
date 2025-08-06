@@ -1,0 +1,70 @@
+
+
+Make sure RepeatRule._apply makes use of self.greedy
+
+
+Port this to Markdown here:
+https://forums.tigsource.com/index.php?topic=71325.msg1444398#msg1444398
+
+Port this?.. is it any good?.. http://bayersglassey.com/articles/program_flow.html
+
+In "algebra of chess", rename "move" to "rule".
+
+Post on https://www.reddit.com/r/chessvariants/
+...and here: https://www.reddit.com/r/chessvariants/comments/1lrbcbp/universal_chess_notation_a_teaser/
+
+Syntax for more easily building board fragments: ♔ + r. + u♙ + ur♙ = ♔.;♙♙
+
+Board fragment unions...
+if filled = ♚|♛|♝|♞|♜|♟, then we can express ♙ + ur(filled) -> . + ur♙
+...which should presumably be equivalent to the union of {(♙ + urx -> . + ur♙) for x in filled}
+...and there's a handy regex-esque syntax: ♚|♛|♝|♞|♜|♟ = [♚♛♝♞♜♟]
+...and in algchess.py, we can support it, with e.g. {(0, 0): '♚♛♝♞♜♟'}
+
+Multiple pieces on one square: (. & ♟ & ♙)
+
+Moves which add or remove squares
+
+Non-board aspects of game state:
+    * Player to move
+    * Pieces available for dropping (e.g. for Shogi)
+
+The game of Snake! (An "Algebra of Snake".)
+NOTE: the "centre" of a square is in square's centre, not its bottom-left corner.
+So, `R. = .`, but `Ru = r`.
+Pieces:
+    S: head
+    ↑←↓→: body
+    ↟↞↡↠: tail
+    $: food
+    .: empty
+Equalities:
+    R↑ = → ...etc
+    R↟ = ↠ ...etc
+Rules:
+    _tail_move = (↟;↑ -> .;↟)|(↟;→ -> .;↠)|(↟;← -> .;↞)
+    tail_move = _tail_move | R _tail_move | R^2 _tail_move | R^3 _tail_move
+    head_move = S;. -> ↑;S
+    eat_move = S;$ -> ↑;S
+    snake_move = eat_move|(head_move)(tail_move)
+
+
+==========================================================================
+
+How can we gamify the algebra of chess?
+Or rather, the algebra of board games?
+What if we show the rules, and show a board fragment, and let the player
+choose which rules to apply next, and give them some kind of goal?
+First of all, we need an interface for the player to choose rules to apply.
+Or rather, there is always one rule, but it may be a union of many, and
+the player gets to choose one possible "next board fragment" from the set
+it generates from the "previous board fragment".
+I think an easy way to get started with this would be for each Rule subclass
+to implement a text-based interface, based on selection from a finite number
+of options.
+So for instance, given a OneOfRule, user can pick one of its child rules,
+and then that child rule's interface is activated.
+For RepeatRule, player may get to choose an integer between two values, or
+an integer with a lower bound.
+Somehow, it would be nice to work CPU players into all this.
+
