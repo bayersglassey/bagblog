@@ -8,6 +8,8 @@ are not quite inverses of each other.
 In particular, str(parse_rule(str(CHESS.rule))) != str(CHESS.rule).
 It doesn't affect the behaviour of Rule._apply, but it does affect the behaviour of
 Rule._player_choice.
+...although, perhaps it shouldn't affect the behaviour of Rule._player_choice...
+if we get fancier about inspecting rules to determine "interfaces".
 
 
 Port this to Markdown here:
@@ -20,13 +22,16 @@ In "algebra of chess", rename "move" to "rule".
 Post on https://www.reddit.com/r/chessvariants/
 ...and here: https://www.reddit.com/r/chessvariants/comments/1lrbcbp/universal_chess_notation_a_teaser/
 
-Syntax for more easily building board fragments: ♔ + r. + u♙ + ur♙ = ♔.;♙♙
-
 Board fragment unions...
 if filled = ♚|♛|♝|♞|♜|♟, then we can express ♙ + ur(filled) -> . + ur♙
 ...which should presumably be equivalent to the union of {(♙ + urx -> . + ur♙) for x in filled}
 ...and there's a handy regex-esque syntax: ♚|♛|♝|♞|♜|♟ = [♚♛♝♞♜♟]
+...and an obvious extension is negative matches, e.g. [^♚♛♝♞♜♟]
+    ...although the interpretation of a board fragment becomes interesting
+    if we need to include the concept of "negative pieces"...
+    Is it the case that `[♚] = ♚`?.. `[♚♚] = [♚]`?.. `♚ + [^♚] = 0`?..
 ...and in algchess.py, we can support it, with e.g. {(0, 0): '♚♛♝♞♜♟'}
+    ...that part's done!
 
 Multiple pieces on one square: (. & ♟ & ♙)
 

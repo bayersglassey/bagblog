@@ -599,7 +599,7 @@ def board_repr(f: Board) -> str:
     return s
 
 
-def print_board(f: Board, *, file=None, border=True):
+def print_board(f: Board, *, file=None, border=True, highlights=()):
     """Prints the given board, in a format suitable for use with parse_board
     (if passed to it as a list of strings, one per line)
 
@@ -624,13 +624,20 @@ def print_board(f: Board, *, file=None, border=True):
         h = 0
         lines = []
     else:
+        highlights = set(highlights)
         min_x, min_y, max_x, max_y = get_board_bounds(f)
         w = max_x - min_x + 1
         h = max_y - min_y + 1
         lines = []
+        def _square_repr(square, x, y):
+            s = square_repr(square)
+            if (x, y) in highlights:
+                return f'\033[7m{s}\033[0m'
+            else:
+                return s
         for y in range(min_y, max_y + 1):
             lines.append(''.join(
-                square_repr(f.get((x, y), ' '))
+                _square_repr(f.get((x, y), ' '), x, y)
                 for x in range(min_x, max_x + 1)))
         lines.reverse()
     if border:
@@ -1065,12 +1072,47 @@ class Rule(metaclass=ABCMeta):
         return isinstance(other, Rule) and (self is other or str(self) == str(other))
 
     def to_user_choice_repr(self) -> str:
-        return self.prettystring(short=True)
+        return self.prettystring(hide_poi=True)
 
-    def prettystring(self, *, short=False) -> str:
+    def prettystring(self, *, hide_poi=False, indentmode=0) -> str:
+        """
+
+            >>> rule = OneOfRule([
+            ...     PieceOfInterestRule('♖', OneOfRule([
+            ...         parse_rule('%;. -> .;%').one_or_more(),
+            ...         parse_rule('%;. -> .;%').zero_or_more() * parse_rule(f'%;♟ -> .;%')
+            ...     ])),
+            ...     PieceOfInterestRule('♗', OneOfRule([
+            ...         parse_rule('%;l. -> .;l%').one_or_more(),
+            ...         parse_rule('%;l. -> .;l%').zero_or_more() * parse_rule(f'%;l♟ -> .;l%')
+            ...     ])),
+            ... ])
+
+            >>> print(rule.prettystring())
+            (%♖: ((%;. -> .;%)+) |
+             (((%;. -> .;%)*)(%;♟ -> .;%))) |
+            (%♗: ((r%;. -> r.;%)+) |
+             (((r%;. -> r.;%)*)(r%;♟ -> r.;%)))
+
+            >>> rule = parse_rule('%p: ((. -> %)(. -> %) | (. -> %) | (. -> %))')
+
+            >>> print(rule.prettystring(indentmode=1))
+            %p: (
+              (
+                . -> %
+              )(
+                . -> %
+              )
+            ) | (
+              . -> %
+            ) | (
+              . -> %
+            )
+
+        """
         as_str = str(self)
 
-        if short:
+        if hide_poi:
             rhs = as_str
             as_str = ''
             while ':' in rhs:
@@ -1087,21 +1129,41 @@ class Rule(metaclass=ABCMeta):
                 as_str += f'{lhs}: ...'
             as_str += rhs
 
-        parts = as_str.split(' | ')
         depth = 0
         lines = []
-        last_i = len(parts) - 1
-        for i, part in enumerate(parts):
-            spaces = '  ' * depth
-            line = spaces + part
-            if i < last_i:
-                line += ' |'
-            lines.append(line)
-            for c in part:
-                if c == '(':
+        if indentmode == 0:
+            parts = as_str.split(' | ')
+            last_part_i = len(parts) - 1
+            for part_i, part in enumerate(parts):
+                spaces = ' ' * depth
+                line = spaces + part
+                if part_i < last_part_i:
+                    line += ' |'
+                lines.append(line)
+                for c in part:
+                    if c == '(':
+                        depth += 1
+                    elif c == ')':
+                        depth -= 1
+        elif indentmode == 1:
+            for i, part in enumerate(as_str.split('(')):
+                if i:
+                    if lines and '(' not in lines[-1]:
+                        lines[-1] += '('
+                    else:
+                        lines.append('  ' * depth + '(')
                     depth += 1
-                elif c == ')':
-                    depth -= 1
+                for j, subpart in enumerate(part.split(')')):
+                    line = ''
+                    if j:
+                        depth -= 1
+                        line += ')'
+                    if subpart:
+                        line += subpart
+                    if line:
+                        lines.append('  ' * depth + line)
+        else:
+            raise ValueError(f"Bad indentmode: {indentmode!r}")
         return '\n'.join(lines)
 
     @staticmethod
@@ -1203,10 +1265,8 @@ class FindAndReplaceRule(Rule):
             return board
         movements = find(self.pattern, board)
         locations = [m * (0, 0) for m in movements]
-        choice_board = {k: 'X' if k in locations else '.'
-            for k in board}
         print("...matched at locations:")
-        print_board(choice_board)
+        print_board(board, highlights=locations)
         movement = get_player_choice(movements, msg="Choose a location at which to apply the replacement:")
         return movement and replace(
             movement(self.replacement),
@@ -1335,10 +1395,8 @@ class PieceOfInterestRule(Rule):
         print_board(board)
         locations = [k for k, v in board.items() if v == self.piece
             and self._apply_at(board, k)]
-        choice_board = {k: 'X' if k in locations else '.'
-            for k in board}
         print("...matched at locations:")
-        print_board(choice_board)
+        print_board(board, highlights=locations)
         location = get_player_choice(locations, msg=f"Choose the location of the {self.piece} to move:")
         if not location:
             return None
@@ -1574,6 +1632,8 @@ SNAKE_BODY = '↑←↓→'
 SNAKE_TAIL = '↟↞↡↠'
 SNAKE_PIECES = SNAKE_BODY + SNAKE_TAIL
 def snake_rotate_piece(piece: str, n: int) -> str:
+    if len(piece) != 1:
+        return ''.join(map(snake_rotate_piece, piece))
     if piece in SNAKE_PIECES:
         i = SNAKE_PIECES.index(piece)
         i = (i // 4) * 4 + (i + n) % 4
@@ -1626,6 +1686,8 @@ CHESS_PIECES_UNFILLED = '♙♔♕♗♘♖'
 CHESS_PIECES_FILLED = '♟♚♛♝♞♜'
 CHESS_PIECES = CHESS_PIECES_UNFILLED + CHESS_PIECES_FILLED
 def chess_reverse_piece(piece: str) -> str:
+    if len(piece) != 1:
+        return ''.join(map(chess_reverse_piece, piece))
     if piece in CHESS_PIECES:
         l = len(CHESS_PIECES)
         i = CHESS_PIECES.index(piece) + l // 2
