@@ -258,7 +258,7 @@ For this, we will use Rule.one_or_more(), which means repeat from 1 to infinity.
 import re
 from abc import ABCMeta, abstractmethod
 from typing import List, Dict, Tuple, Iterable, Optional, Union, FrozenSet
-from typing import NamedTuple
+from typing import Callable, NamedTuple
 
 
 MOVEMENT_REGEX = re.compile(r'[udlrR](?:\^-?\d+)?')
@@ -275,6 +275,10 @@ Location = Tuple[int, int]
 LocationContents = str
 Board = Dict[Location, LocationContents]
 BoardKey = FrozenSet[Tuple[Location, LocationContents]]
+
+
+HighlightFunc = Callable[[str], str]
+ansi_reverse = lambda s: f'\033[7m{s}\033[0m'
 
 
 def get_player_bool_choice(msg) -> bool:
@@ -599,7 +603,50 @@ def board_repr(f: Board) -> str:
     return s
 
 
-def print_board(f: Board, *, file=None, border=True, highlights=()):
+def get_board_lines(
+        board: Board,
+        *,
+        file=None,
+        border=True,
+        highlights: Union[Iterable[Location], Dict[Location, HighlightFunc]] = (),
+        str_join=''.join, # hack, so you can pass curtsies.FmtStr's join
+        ) -> List[str]:
+    """The innards of print_board"""
+    if not board:
+        w = 0
+        h = 0
+        lines = []
+    else:
+        if isinstance(highlights, dict):
+            highlight_funcs = highlights
+        else:
+            highlights = set(highlights)
+            highlight_funcs = {}
+        min_x, min_y, max_x, max_y = get_board_bounds(board)
+        w = max_x - min_x + 1
+        h = max_y - min_y + 1
+        lines = []
+        def _square_repr(square, x, y):
+            s = square_repr(square)
+            if (x, y) in highlights:
+                func = highlight_funcs.get((x, y), ansi_reverse)
+                return func(s)
+            else:
+                return s
+        for y in range(min_y, max_y + 1):
+            lines.append(str_join(
+                _square_repr(board.get((x, y), ' '), x, y)
+                for x in range(min_x, max_x + 1)))
+        lines.reverse()
+    if border:
+        lines = [f'|{line}|' for line in lines]
+        border_line = '+' + '-' * w + '+'
+        lines.insert(0, border_line)
+        lines.append(border_line)
+    return lines
+
+
+def print_board(board: Board, *, file=None, **kwargs):
     """Prints the given board, in a format suitable for use with parse_board
     (if passed to it as a list of strings, one per line)
 
@@ -619,35 +666,9 @@ def print_board(f: Board, *, file=None, border=True, highlights=()):
         +---+
 
     """
-    if not f:
-        w = 0
-        h = 0
-        lines = []
-    else:
-        highlights = set(highlights)
-        min_x, min_y, max_x, max_y = get_board_bounds(f)
-        w = max_x - min_x + 1
-        h = max_y - min_y + 1
-        lines = []
-        def _square_repr(square, x, y):
-            s = square_repr(square)
-            if (x, y) in highlights:
-                return f'\033[7m{s}\033[0m'
-            else:
-                return s
-        for y in range(min_y, max_y + 1):
-            lines.append(''.join(
-                _square_repr(f.get((x, y), ' '), x, y)
-                for x in range(min_x, max_x + 1)))
-        lines.reverse()
-    if border:
-        print('+' + '-' * w + '+', file=file)
+    lines = get_board_lines(board, **kwargs)
     for line in lines:
-        if border:
-            line = f'|{line}|'
         print(line, file=file)
-    if border:
-        print('+' + '-' * w + '+', file=file)
 
 
 def parse_rule(text: str, *, debug=False) -> 'Rule':
@@ -943,6 +964,7 @@ def find(f: Board, g: Board) -> List[Movement]:
         # Would need to return the set of all movements!
         raise ValueError("Can't search for empty board")
 
+    c = None
     for k, _c in f.items():
         if _c[0] == '^':
             # Can't match on a negative pattern, since there would be
@@ -955,7 +977,7 @@ def find(f: Board, g: Board) -> List[Movement]:
             # We prefer non-'.' matches, since those are probably more likely
             # to occur (i.e. in most board games, most of the board is empty).
             break
-    else:
+    if c is None:
         raise ValueError(f"Can't search for board: {board_repr(f)}")
     x, y = k
 
@@ -1054,6 +1076,43 @@ def find_and_replace(f: Board, g: Board, h: Board) -> List[Board]:
             delete(h.copy(), (m(k) for k in f)),
             in_place=True)
         for m in find(f, h)]
+
+
+def board_diff(b1: Board, b2: Board) -> List[Location]:
+    """Returns a list of locations whose contents changed between b1 and b2
+
+        >>> b1 = parse_board('ppp;...')
+        >>> for k, v in b1.items(): print(f'{k}: {v}')
+        (0, 0): p
+        (1, 0): p
+        (2, 0): p
+        (0, 1): .
+        (1, 1): .
+        (2, 1): .
+
+        >>> b2 = parse_board('.0.;p.p;0p')
+        >>> for k, v in b2.items(): print(f'{k}: {v}')
+        (0, 0): .
+        (2, 0): .
+        (0, 1): p
+        (1, 1): .
+        (2, 1): p
+        (1, 2): p
+
+        >>> for k in board_diff(b1, b2): print(k)
+        (0, 0)
+        (1, 0)
+        (2, 0)
+        (0, 1)
+        (2, 1)
+        (1, 2)
+
+    """
+    # Locations in b1 which were removed or modified in b2:
+    kk = [k for k, v in b1.items() if b2.get(k) != v]
+    # Locations in which were added in b2:
+    kk += [k for k in b2 if k not in b1]
+    return kk
 
 
 class Rule(metaclass=ABCMeta):
@@ -1549,31 +1608,31 @@ class RepeatRule(Rule):
         for i in range(self.at_least):
             boards = self.rule(boards)
         all_boards = boards
-        if self.at_most is not None:
-            # We have already applied our rule self.at_least times, resulting
-            # in all_boards.
-            # Now we apply our rule (self.at_most - self.at_least) more times,
-            # extending all_boards each time.
-            for i in range(self.at_most - self.at_least):
-                boards = self.rule(boards)
-                all_boards.extend(boards)
-        else:
-            # We apply our rule "forever"!.. except, to avoid an infinite
-            # loop, we actually only apply our rule while we find new boards
-            # which we haven't seen yet.
-            board_keys = {get_board_key(b) for b in boards}
-            while True:
-                new_boards = []
-                for new_board in self.rule(boards):
-                    key = get_board_key(new_board)
-                    if key in board_keys:
-                        continue
-                    new_boards.append(new_board)
-                    board_keys.add(key)
-                if not new_boards:
-                    break
+
+        # We apply our rule "forever"!.. except, to avoid an infinite
+        # loop, we actually only apply our rule while we find new boards
+        # which we haven't seen yet.
+        board_keys = {get_board_key(b) for b in boards}
+        i = self.at_least
+        while True:
+            if self.at_most is not None and i >= self.at_most:
+                break
+            new_boards = []
+            for new_board in self.rule(boards):
+                key = get_board_key(new_board)
+                if key in board_keys:
+                    continue
+                new_boards.append(new_board)
+                board_keys.add(key)
+            if not new_boards:
+                break
+            if self.greedy:
+                all_boards = new_boards
+            else:
                 all_boards.extend(new_boards)
-                boards = new_boards
+            boards = new_boards
+            i += 1
+
         return unique_boards(all_boards)
 
     def _player_choice(self, board: Board) -> Optional[Board]:
@@ -1610,6 +1669,19 @@ class Game(NamedTuple):
     initial_board: Board
 
 
+def reverse_xo_pieces(piece: LocationContents) -> LocationContents:
+    return piece.replace('X', '<X>').replace('O', 'X').replace('<X>', 'O')
+class ReverseXOMovement:
+    def __call__(self, other):
+        if isinstance(other, str):
+            return reverse_xo_pieces(other)
+        elif isinstance(other, dict):
+            return {k: reverse_xo_pieces(v) for k, v in other.items()}
+        elif isinstance(other, Rule):
+            return other._distribute(self)
+        else:
+            raise TypeError(type(other))
+    __mul__ = __call__
 TIC_TAC_TOE = Game(
     rule=OneOfRule([
         parse_rule('. -> X'),
@@ -1631,7 +1703,7 @@ TIC_TAC_TOE = Game(
 SNAKE_BODY = '↑←↓→'
 SNAKE_TAIL = '↟↞↡↠'
 SNAKE_PIECES = SNAKE_BODY + SNAKE_TAIL
-def snake_rotate_piece(piece: str, n: int) -> str:
+def snake_rotate_piece(piece: LocationContents, n: int) -> LocationContents:
     if len(piece) != 1:
         return ''.join(map(snake_rotate_piece, piece))
     if piece in SNAKE_PIECES:
@@ -1685,7 +1757,7 @@ SNAKE = Game(
 CHESS_PIECES_UNFILLED = '♙♔♕♗♘♖'
 CHESS_PIECES_FILLED = '♟♚♛♝♞♜'
 CHESS_PIECES = CHESS_PIECES_UNFILLED + CHESS_PIECES_FILLED
-def chess_reverse_piece(piece: str) -> str:
+def chess_reverse_piece(piece: LocationContents) -> LocationContents:
     if len(piece) != 1:
         return ''.join(map(chess_reverse_piece, piece))
     if piece in CHESS_PIECES:
@@ -1789,6 +1861,38 @@ CHESS = Game(
 )
 
 
+_OTHELLO_RULE = PieceOfInterestRule('.', OneOfRule([
+    Movement.rotate(i) * (
+        parse_rule('%O -> %F') * parse_rule('FO -> XF').zero_or_more(greedy=True) * parse_rule('FX -> XX')
+    )
+    for i in range(4)
+]).one_or_more(greedy=True) * parse_rule('% -> X'))
+OTHELLO = Game(
+    rule=OneOfRule([
+        _OTHELLO_RULE,
+        ReverseXOMovement() * _OTHELLO_RULE,
+    ]),
+    initial_board=parse_board([
+        '........',
+        '........',
+        '........',
+        '...XO...',
+        '...OX...',
+        '........',
+        '........',
+        '........',
+    ]),
+)
+
+
+GAMES = {
+    'tictac': TIC_TAC_TOE,
+    'chess': CHESS,
+    'snake': SNAKE,
+    'othello': OTHELLO,
+}
+
+
 def play_game(game: Game):
     rule = game.rule
     board = game.initial_board
@@ -1797,9 +1901,9 @@ def play_game(game: Game):
         print()
         print('=' * 40)
         print(f"=== TURN {turn_no}:")
-        print_board(board)
         if board is None:
             print("Out of options! Game over.")
             break
+        print_board(board)
         board = rule._player_choice(board)
         turn_no += 1
