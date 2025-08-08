@@ -256,9 +256,11 @@ For this, we will use Rule.one_or_more(), which means repeat from 1 to infinity.
 
 """
 import re
+import locale
 from abc import ABCMeta, abstractmethod
 from typing import List, Dict, Tuple, Iterable, Optional, Union, FrozenSet
 from typing import Callable, NamedTuple
+from argparse import ArgumentParser
 
 
 MOVEMENT_REGEX = re.compile(r'[udlrR](?:\^-?\d+)?')
@@ -1907,3 +1909,21 @@ def play_game(game: Game):
         print_board(board)
         board = rule._player_choice(board)
         turn_no += 1
+
+
+def main():
+    locale.setlocale(locale.LC_ALL, '')
+
+    parser = ArgumentParser()
+    parser.add_argument('-g', '--game', choices=GAMES, default='chess')
+    args = parser.parse_args()
+
+    game = GAMES[args.game]
+    try:
+        play_game(game)
+    except KeyboardInterrupt:
+        pass
+
+
+if __name__ == '__main__':
+    main()
