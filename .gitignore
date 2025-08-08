@@ -1,3 +1,7 @@
 *.swp
 *.pyc
 venv/
+
+# rec.sh output:
+rec.cast
+rec.gif
