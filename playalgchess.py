@@ -97,12 +97,8 @@ def play_game(game: Game):
             # selected_locations
             selectable_boards = []
 
-            # Subset of selectable_boards whose diffs with board overlap with
-            # (cx, cy)
-            cursor_adjacent_boards = []
-
-            # All locations in the diffs between board and cursor_adjacent_boards
-            cursor_adjacent_locations = set()
+            # All locations in the diffs between board and selectable_boards
+            selectable_adjacent_locations = set()
 
             # Index into selectable_boards: if there are more than one, player
             # can cycle through them with the page up/down keys
@@ -113,20 +109,20 @@ def play_game(game: Game):
                 are changed"""
 
                 selectable_boards.clear()
-                cursor_adjacent_boards.clear()
-                cursor_adjacent_locations.clear()
+                selectable_adjacent_locations.clear()
 
                 cp = (cx, cy)
 
                 for next_board in next_boards:
                     d = board_diff(board, next_board)
-                    is_selectable = selected_locations and all(
-                        k in d for k in selected_locations)
+                    if selected_locations:
+                        is_selectable = all(
+                            k in d for k in selected_locations)
+                    else:
+                    is_selectable = cp in d
                     if is_selectable:
                         selectable_boards.append(next_board)
-                    if (not selected_locations or is_selectable) and cp in d:
-                        cursor_adjacent_boards.append(next_board)
-                        cursor_adjacent_locations.update(d)
+                        selectable_adjacent_locations.update(d)
 
             update_selectable_boards()
 
@@ -137,8 +133,6 @@ def play_game(game: Game):
                 # Lines of text to be displayed
                 lines = header_lines.copy()
 
-                lines.append(f"{board_i=} {len(next_boards)=} {len(selectable_boards)=} {len(cursor_adjacent_boards)=}")
-
                 # Determine selected_board
                 if board_i is not None:
                     # Player used page up/down to manually select a board
@@ -147,11 +141,8 @@ def play_game(game: Game):
                 elif len(selectable_boards) == 1:
                     lines.append("Choose this move?")
                     selected_board = selectable_boards[0]
-                elif len(cursor_adjacent_boards) == 1:
-                    lines.append("Choose this move?")
-                    selected_board = cursor_adjacent_boards[0]
                 else:
-                    lines.append(f"{len(cursor_adjacent_boards)} possible moves")
+                    lines.append(f"{len(selectable_boards)} possible moves")
                     selected_board = None
 
                 # Figure out which board to display
@@ -173,7 +164,7 @@ def play_game(game: Game):
                         highlights[k] = compose(g, *ff)
                     else:
                         highlights[k] = compose(*ff)
-                for k in cursor_adjacent_locations:
+                for k in selectable_adjacent_locations:
                     highlight(k, blue)
                 for k in selected_locations:
                     highlight(k, on_dark, on_blue)
@@ -228,7 +219,6 @@ def play_game(game: Game):
                         board_i = None
                         break
                     elif key == '<PAGEUP>':
-                        selected_locations.add((cx, cy))
                         update_selectable_boards()
                         if selectable_boards:
                             if board_i is None:
@@ -237,7 +227,6 @@ def play_game(game: Game):
                                 board_i = (board_i + 1) % len(selectable_boards)
                         break
                     elif key == '<PAGEDOWN>':
-                        selected_locations.add((cx, cy))
                         update_selectable_boards()
                         if selectable_boards:
                             if board_i is None:
