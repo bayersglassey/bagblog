@@ -1486,7 +1486,7 @@ Or we could express chess variants, like
 We could also implement a software library which can parse it, and use it
 to quickly play different chess variants!
 That sounds fun. Maybe we'll do that and
-[link to it here](algchess.py)...
+[link to it here](/algchess.py)...
 
 
 ================================================================
