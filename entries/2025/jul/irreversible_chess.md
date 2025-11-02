@@ -496,7 +496,7 @@ If filled pawn moves forward, however, then the unfilled pieces can never
 get through (aside from the knight).
 
 Well, that's enough of that.
-My takeaway from this is that running one's knight past the enemy pawn line
+My takeaway from this is that running one's king past the enemy pawn line
 may in fact be quite difficult, unless one can punch a hole through.
 
 
