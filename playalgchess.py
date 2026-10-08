@@ -119,7 +119,7 @@ def play_game(game: Game):
                         is_selectable = all(
                             k in d for k in selected_locations)
                     else:
-                    is_selectable = cp in d
+                        is_selectable = cp in d
                     if is_selectable:
                         selectable_boards.append(next_board)
                         selectable_adjacent_locations.update(d)
