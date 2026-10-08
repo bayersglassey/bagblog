@@ -543,6 +543,44 @@ def parse_board(lines_or_text, x0=0, y0=0) -> Board:
     return f
 
 
+def move_board(board: Board, addx: int, addy: int) -> Board:
+    """
+
+        >>> b1 = parse_board('aa;bb')
+        >>> for k, v in b1.items(): print(f'{k!r}: {v!r}')
+        (0, 0): 'a'
+        (1, 0): 'a'
+        (0, 1): 'b'
+        (1, 1): 'b'
+
+        >>> b2 = move_board(b1, 10, 20)
+        >>> for k, v in b2.items(): print(f'{k!r}: {v!r}')
+        (10, 20): 'a'
+        (11, 20): 'a'
+        (10, 21): 'b'
+        (11, 21): 'b'
+
+    """
+    return {
+        (x + addx, y + addy): v
+        for (x, y), v in board.items()}
+
+
+def combine_boards(*boards: Board) -> Board:
+    """
+
+        >>> b1 = parse_board('aaa;bbb')
+        >>> b2 = parse_board(';;ccc')
+        >>> print(board_repr(combine_boards(b1, b2)))
+        aaa;bbb;ccc
+
+    """
+    combined_board = {}
+    for board in boards:
+        combined_board.update(board)
+    return combined_board
+
+
 def square_repr(square: LocationContents) -> str:
     """Algebraic representation of a single square's contents within a Board"""
     if square[0] == '^':
@@ -1756,6 +1794,7 @@ SNAKE = Game(
     ]),
 )
 
+CHESS_WALL = '█'
 CHESS_PIECES_UNFILLED = '♙♔♕♗♘♖'
 CHESS_PIECES_FILLED = '♟♚♛♝♞♜'
 CHESS_PIECES = CHESS_PIECES_UNFILLED + CHESS_PIECES_FILLED
@@ -1800,13 +1839,13 @@ CHESS_RULE = OneOfRule([
         # Move one square up
         parse_rule('%;. -> .;%'),
         # Move two squares up from initial position
-        parse_rule(f'[^.{CHESS_PIECES}];0;%;.;. -> 0;0;.;.;%'),
+        parse_rule(f'{CHESS_WALL};0;%;.;. -> {CHESS_WALL};0;.;.;%'),
         # Take diagonally
         parse_rule(f'%;r[{CHESS_PIECES_FILLED}] -> .;r%'),
         parse_rule(f'%;l[{CHESS_PIECES_FILLED}] -> .;l%'),
     ]) * OneOfRule([
         # If a pawn reaches the far rank, it must transform!
-        parse_rule(f'%;[^.{CHESS_PIECES}] -> {p}')
+        parse_rule(f'%;{CHESS_WALL} -> {p}{CHESS_WALL}')
         for p in '♕♗♘♖'
     ]).optionally(greedy=True)),
     PieceOfInterestRule('♔', OneOfRule([
@@ -1820,8 +1859,8 @@ CHESS_RULE = OneOfRule([
     ] + [
         # Castling!.. allowed even through check, due to the difficulty
         # of detecting check with algebra alone...
-        parse_rule(f'[^.{CHESS_PIECES}];♖..% -> 0;.%♖.'),
-        parse_rule(f'[^.{CHESS_PIECES}];%...♖ -> 0;.♖%..'),
+        parse_rule(f'{CHESS_WALL};♖..% -> {CHESS_WALL};.%♖.'),
+        parse_rule(f'{CHESS_WALL};%...♖ -> {CHESS_WALL};.♖%..'),
     ])),
     PieceOfInterestRule('♕', OneOfRule([
         Movement.rotate(i) * rule
@@ -1851,14 +1890,16 @@ CHESS = Game(
         ChessReverseMovement() * CHESS_RULE,
     ]),
     initial_board=parse_board([
-        '♜♞♝♚♛♝♞♜',
-        '♟♟♟♟♟♟♟♟',
-        '........',
-        '........',
-        '........',
-        '........',
-        '♙♙♙♙♙♙♙♙',
-        '♖♘♗♔♕♗♘♖',
+        '██████████',
+        '█♜♞♝♚♛♝♞♜█',
+        '█♟♟♟♟♟♟♟♟█',
+        '█........█',
+        '█........█',
+        '█........█',
+        '█........█',
+        '█♙♙♙♙♙♙♙♙█',
+        '█♖♘♗♔♕♗♘♖█',
+        '██████████',
     ]),
 )
 
@@ -1887,11 +1928,31 @@ OTHELLO = Game(
 )
 
 
+CHESS_SNAKE = Game(
+    rule=OneOfRule([CHESS.rule, SNAKE.rule]),
+    initial_board=parse_board([
+        ' ██████████',
+        ' █..$$$$..█',
+        ' █♜♞♝♚♛♝♞♜█',
+        ' █♟♟♟♟♟♟♟♟█',
+        '█..........█',
+        '█↡........S█',
+        '█S........↟█',
+        '█..........█',
+        ' █♙♙♙♙♙♙♙♙█',
+        ' █♖♘♗♔♕♗♘♖█',
+        ' █..$$$$..█',
+        ' ██████████',
+    ]),
+)
+
+
 GAMES = {
     'tictac': TIC_TAC_TOE,
     'chess': CHESS,
     'snake': SNAKE,
     'othello': OTHELLO,
+    'chess-snake': CHESS_SNAKE,
 }
 
 
